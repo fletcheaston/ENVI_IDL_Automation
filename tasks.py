@@ -53,28 +53,11 @@ def getFilePairs(directory):
     return(allPathPairs)
 
 
-# Takes three strings and an int.
-# The first string is the absolute filesystem path to the relevant .hsi file.
-# The second string is the absolute filesystem path to the relevant _igm file.
-# The third string is the relative filesystem path to the tasks.1 file, which provides the base instructions for IDL.
-# The int is the counter, to give each of the final variables in IDL unique names.
-# Returns a tuple, containing...
-# A list of strings, corresponding to the relevant IDL instructions.
-# A string, corresponding to the refGltFID_count.
-def getTaskOneInstructions(hsiFilename, igmFilename, taskOneFilename, count):
+# 
+def getTaskInstructions(taskDictionary, taskFilename, rFID_Key=None):
     idlCommands = []
-    
-    # A dictionary containing the strings we'd like to replace in the taskOneFile.
-    # The .hsi/_igm files need to be strings in IDL, so we give them single quotes.
-    # All these keys are hardcoded, both here and in the taskOneFile. They MUST be the same, between this program and that file.
-    taskDictionary = {
-        "{hsiFile}": "'" + hsiFilename + "'",
-        "{igmFile}": "'" + igmFilename + "'",
-        "{refGltFile}": "refGltFile_" + str(count),
-        "{refGltFID}": "refGltFID_" + str(count)
-    }
-    
-    with open(taskOneFilename, "r") as taskFile:
+
+    with open(taskFilename, "r") as taskFile:
         taskFileLines = taskFile.readlines()
 
     # Pretty straightforward. Run through each line of the file, replace whatever strings we need to replace, and add it to the list of commands.
@@ -89,5 +72,72 @@ def getTaskOneInstructions(hsiFilename, igmFilename, taskOneFilename, count):
 
             # Each line in the taskOneFile has a newline character at the end, so we strip it before adding it to the list.
             idlCommands.append(line)
+
+    if(rFID_Key):
+        return((idlCommands, taskDictionary[rFID_Key]))
+    else:
+        return((idlCommands))
+
+
+# Takes three strings and an int.
+# The first string is the absolute filesystem path to the relevant .hsi file.
+# The second string is the absolute filesystem path to the relevant _igm file.
+# The third string is the relative filesystem path to the tasks.1 file, which provides the base instructions for IDL.
+# The int is the counter, to give each of the final variables in IDL unique names.
+# Returns a tuple, containing...
+# A list of strings, corresponding to the relevant IDL instructions.
+# A string, corresponding to the refGltFID_count.
+def getTaskOneInstructions(hsiFilename, igmFilename, taskOneFilename, count):
+    # A dictionary containing the strings we'd like to replace in the taskOneFile.
+    # The .hsi/_igm files need to be strings in IDL, so we give them single quotes.
+    # All these keys are hardcoded, both here and in the taskOneFile. They MUST be the same, between this program and that file.
+    taskDictionary = {
+        "{hsiFile}": "'" + hsiFilename + "'",
+        "{igmFile}": "'" + igmFilename + "'",
+        "{refGltFile}": "refGltFile_" + str(count),
+        "{refGltFID}": "refGltFID_" + str(count)
+    }
     
-    return((idlCommands, taskDictionary["{refGltFID}"]))
+    return(getTaskInstructions(taskDictionary, taskOneFilename, rFID_Key="{refGltFID}"))
+
+
+# Returns a string read from the bandMathExpression file.
+def getBandMathExpression():
+    with open("bandMathExpression", "r") as file:
+        expression = file.readline()
+    return(expression)
+
+
+# Returns a list of numbers read from the bandMathNumbers file.
+def getBandMathNumbers():
+    with open("bandMathNumbers", "r") as file:
+        numbers = file.readline().split(',')
+
+    # We subtract 1 because ENVI counts Bands starting at 1, but IDL counts Bands starting at 0.
+    # We're converting from ENVI to IDL, so we subtract 1.
+    return([int(x) - 1 for x in numbers])
+
+
+# Takes two strings and an int.
+# The first string is the variable name of a unique FID from task one.
+# The second string is the relative filesystem path to the tasks.2 file, which provides the base instructions for IDL.
+# Returns a tuple, containing...
+# A list of strings, corresponding to the relevant IDL instructions.
+# A string, corresponding to the refGltFID_count.
+def getTaskTwoInstructions(FID, taskTwoFilename, count):
+    bandMathExpression = getBandMathExpression()
+    bandMathNumbers = getBandMathNumbers()
+    geoRefFIDArray = (FID + ", ") * (len(bandMathNumbers) - 1) + FID
+
+    # A dictionary containing the strings we'd like to replace in the taskTwoFile.
+    # All these keys are hardcoded, both here and in the taskTwoFile. They MUST be the same, between this program and that file.
+    taskDictionary = {
+        "{geoRefFID}": FID,
+        "{bandMathExpression}": "'" + bandMathExpression + "'",
+        "{bandMathNumbers}": str(bandMathNumbers),
+        "{geoRefFIDArray}": geoRefFIDArray,
+        "{bandedOutFile}": "bandedOutFile_" + str(count),
+        "{bandedFID}": "bandedFID_" + str(count)
+    }
+
+    return(getTaskInstructions(taskDictionary, taskTwoFilename, rFID_Key="{bandedFID}"))

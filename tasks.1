@@ -26,7 +26,8 @@ ENVI_FILE_QUERY, gltFID, DIMS=gltDims
 
 # The real meat of the processing. Georeferences all the bands to the glt file we just build.
 # The important  parts are the OUT_NAME, R_FID, and POS.
-# OUT_NAME and R_FID must be unique, as we'll need them later for the band math.
+# OUT_NAME and R_FID must be unique.
+# R_FID, which is the returned FID of the new file, is needed in task two for the band math.
 # POS refers to what bands from the dataRaster we want to use. We'll use all 150 of them for now.
 # Using only the necessary bands would be optimal, but may create problems when attempting to keep track of what band is what for the band math.
 # Will look into this later. For now, we just specify all bands.

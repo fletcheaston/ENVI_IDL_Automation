@@ -3,18 +3,25 @@
 from tasks import *
 
 pathNames = getFilePairs("Test_Good")
-allFIDS = []
-count = 0
-for pair in pathNames:
-    idlCommands, uniqueFID = getTaskOneInstructions(pair[0], pair[1], "tasks.1", count)
-    allFIDS.append(uniqueFID)
-    for t in idlCommands:
-        print(t)
-    count += 1
-    print()
 
-for fid in allFIDS:
-    print(fid)
+taskOneFIDs = []
+count = 0
+for hsi, igm in pathNames:
+    idlCommands, uniqueFID = getTaskOneInstructions(hsi, igm, "tasks.1", count)
+    taskOneFIDs.append(uniqueFID)
+    for command in idlCommands:
+        print(command)
+    print()
+    count += 1
+
 print()
 
-pathNames = getFilePairs("Test_Bad")
+taskTwoFIDs = []
+count = 0
+for fid in taskOneFIDs:
+    idlCommands, uniqueFID = getTaskTwoInstructions(fid, "tasks.2", count)
+    taskTwoFIDs.append(uniqueFID)
+    for command in idlCommands:
+        print(command)
+    print()
+    count += 1
