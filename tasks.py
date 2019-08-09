@@ -7,7 +7,7 @@ import sys
 # The path to an _igm file is the second element in each tuple.
 def getFilePairs(directory):
     allPathPairs = []
-    pairErrors = 0
+    filePairErrors = 0
 
     # Recursively walks through all the sub-directories in the specified directory.
     for dirpath, _, allFiles in os.walk(directory):
@@ -28,19 +28,19 @@ def getFilePairs(directory):
             # If an error occurs, add to the error counter, and display this upon sys.exit().
             if(len(hsiFiles) != 1 or len(igmFiles) != 1):
                 if(len(hsiFiles) != 1):
-                    print("Error: {!r} .hsi files found in {!r}, 1 required.".format(len(hsiFiles), os.path.abspath(dirpath)))
-                    pairErrors += 1
+                    print("Error: {0} .hsi files found in {1}, 1 required.".format(len(hsiFiles), os.path.abspath(dirpath)))
+                    filePairErrors += 1
                 if(len(igmFiles) != 1):
-                    print("Error: {!r} _igm files found in {!r}, 1 required.".format(len(igmFiles), os.path.abspath(dirpath)))
-                    pairErrors += 1
+                    print("Error: {0} _igm files found in {1}, 1 required.".format(len(igmFiles), os.path.abspath(dirpath)))
+                    filePairErrors += 1
             else:
                 # Throw the absolute paths into a tuple and append it to the list.
                 pathPair = (os.path.join(os.path.abspath(dirpath), hsiFiles[0]), os.path.join(os.path.abspath(dirpath), igmFiles[0]))
                 allPathPairs.append(pathPair)
 
-    if(pairErrors > 0):
+    if(filePairErrors > 0):
         # Notably, this can now detect extra .hsi or _igm files across multiple directories, and will alert the operator to all of them.
-        print("{!r} file pairing errors found. Exiting program.".format(pairErrors))
+        print("{0} file pairing errors found. Exiting program.".format(filePairErrors))
         sys.exit(1)
 
     if(len(allPathPairs) == 0):
