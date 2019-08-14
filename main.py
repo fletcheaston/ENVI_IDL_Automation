@@ -1,32 +1,13 @@
 # Created by Fletcher Easton
 import tasks
 
+#  Doesn't print the string. Used to skip output for tasks in testing.
+def dontPrint(string):
+    pass
+
 tasks.setup()
 
 pathNames = tasks.getFilePairs(r"Test_Good")
-
-taskOneFIDs = []
-count = 0
-for hsi, igm in pathNames:
-    idlCommands, uniqueFID = tasks.getTaskOneInstructions(hsi, igm, "tasks.1", count)
-    taskOneFIDs.append(uniqueFID)
-    for command in idlCommands:
-        print(command)
-    print()
-    count += 1
-
-print()
-
-taskTwoFIDs = []
-count = 0
-for fid in taskOneFIDs:
-    idlCommands, uniqueFID = tasks.getTaskTwoInstructions(fid, "tasks.2", count)
-    taskTwoFIDs.append(uniqueFID)
-    for command in idlCommands:
-        print(command)
-    print()
-    count += 1
-
-idlCommands, mosaicRaster = tasks.getTaskThreeInstructions(taskTwoFIDs, "tasks.3", 0)
-for command in idlCommands:
-    print(command)
+taskOneFIDs = tasks.runTaskOne(pathNames, taskOneFilename="tasks.1", execute=print)
+taskTwoFIDs = tasks.runTaskTwo(taskOneFIDs, taskTwoFilename="tasks.2", execute=print)
+taskThreeRaster = tasks.runTaskThree(taskTwoFIDs, 0, taskThreeFilename="tasks.3", execute=print)

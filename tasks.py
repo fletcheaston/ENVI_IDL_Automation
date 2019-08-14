@@ -71,6 +71,25 @@ def getTaskFileLines(taskFilename):
     return(allLines)
 
 
+# Takes a list of tuples, two optional strings, and an optional function.
+# The list of tuples contains strings of the .hsi/_igm file paris.
+# The first optional string is the relative filesystem path to the tasks.1 file, which provides the base instructions for IDL.
+# The second optional string is a path of the temporary directory where we want to store intermediate files.
+# The optional function will be called on all the IDL commands.
+# Returns a list of strings, corresponding to FID variable names.
+def runTaskOne(pathNames, taskOneFilename="tasks.1", tempDir="Z:\\temp", execute=print()):
+    taskOneFIDs = []
+    count = 0
+    for hsi, igm in pathNames:
+        idlCommands, uniqueFID = getTaskOneInstructions(hsi, igm, taskOneFilename, count, tempDir=tempDir)
+        taskOneFIDs.append(uniqueFID)
+        for command in idlCommands:
+            execute(command)
+        count += 1
+    
+    return(taskOneFIDs)
+
+
 # Takes three strings, an int, and an optional string.
 # The first string is the absolute filesystem path to the relevant .hsi file.
 # The second string is the absolute filesystem path to the relevant _igm file.
@@ -111,6 +130,23 @@ def getBandMathNumbers():
     return([str(int(x) - 1) for x in numbers])
 
 
+# Takes a list of strings, two optional strings, and an optional function.
+# The list of strings corresponds to the FID variable names.
+# The first optional string is the relative filesystem path to the tasks.2 file, which provides the base instructions for IDL.
+# The second optional string is a path of the temporary directory where we want to store intermediate files.
+# The optional function will be called on all the IDL commands.
+def runTaskTwo(taskOneFIDs, taskTwoFilename="tasks.2", tempDir="Z:\\temp", execute=print):
+    taskTwoFIDs = []
+    count = 0
+    for fid in taskOneFIDs:
+        idlCommands, uniqueFID = getTaskTwoInstructions(fid, "tasks.2", count)
+        taskTwoFIDs.append(uniqueFID)
+        for command in idlCommands:
+            execute(command)
+        count += 1
+    return(taskTwoFIDs)
+
+
 # Takes two strings, an int, and an optional string.
 # The first string is the variable name of a unique FID from task one.
 # The second string is the relative filesystem path to the tasks.2 file, which provides the base instructions for IDL.
@@ -137,6 +173,20 @@ def getTaskTwoInstructions(FID, taskTwoFilename, count, tempDir="Z:\\temp"):
         bandedFID=bandedFID).split("\n")
     
     return((allInstructions, bandedFID))
+
+
+# Takes a list of strings, an int, two optional strings, and an optional function.
+# The list of strings corresponds to the FID variable names.
+# The int is 
+# The first optional string is the relative filesystem path to the tasks.3 file, which provides the base instructions for IDL.
+# The second optional string is a path of the temporary directory where we want to store intermediate files.
+# The optional function will be called on all the IDL commands.
+def runTaskThree(taskTwoFIDs, count, taskThreeFilename="tasks.3", tempDir="Z:\\temp", execute=print):
+    idlCommands, mosaicRaster = getTaskThreeInstructions(taskTwoFIDs, taskThreeFilename, 0)
+    for command in idlCommands:
+        execute(command)
+    return(mosaicRaster)
+
 
 # Takes a list of strings, a string, an int, and an optional string.
 # The list of strings contains the FID variable names for all of the band-math files.
