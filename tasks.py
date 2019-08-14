@@ -1,5 +1,10 @@
+# Created by Fletcher Easton
 import os
 import sys
+import logging
+
+def setup():
+    logging.basicConfig(filename=r"Z:\temp\automatedENVI.log", filemode="w", format="%(name)s - %(levelname)s - %(message)s", level=logging.DEBUG)
 
 # Takes a string specifying what directory to seach.
 # Returns a list of tuples, each tuples containing strings of absoulte filesystem paths.
@@ -28,23 +33,23 @@ def getFilePairs(directory):
             # If an error occurs, add to the error counter, and display this upon sys.exit().
             if(len(hsiFiles) != 1 or len(igmFiles) != 1):
                 if(len(hsiFiles) != 1):
-                    print("Error: {0} .hsi files found in {1}, 1 required.".format(len(hsiFiles), os.path.abspath(dirpath)))
+                    logging.warning("{0} .hsi files found in {1}, 1 required.".format(len(hsiFiles), os.path.abspath(dirpath)))
                     filePairErrors += 1
                 if(len(igmFiles) != 1):
-                    print("Error: {0} _igm files found in {1}, 1 required.".format(len(igmFiles), os.path.abspath(dirpath)))
+                    logging.warning("{0} _igm files found in {1}, 1 required.".format(len(igmFiles), os.path.abspath(dirpath)))
                     filePairErrors += 1
             else:
                 # Throw the absolute paths into a tuple and append it to the list.
+                logging.info("{0},{1}: File pair found in {2}.".format(hsiFiles[0], igmFiles[0], os.path.abspath(dirpath)))
                 pathPair = (os.path.join(os.path.abspath(dirpath), hsiFiles[0]), os.path.join(os.path.abspath(dirpath), igmFiles[0]))
                 allPathPairs.append(pathPair)
 
     if(filePairErrors > 0):
         # Notably, this can now detect extra .hsi or _igm files across multiple directories, and will alert the operator to all of them.
-        print("{0} file pairing errors found. Exiting program.".format(filePairErrors))
-        sys.exit(1)
+        logging.error("{0} file pairing errors found.".format(filePairErrors))
 
     if(len(allPathPairs) == 0):
-        print("Error: No .hsi/_igm pair files found. Exiting program.")
+        logging.error("No .hsi/_igm pair files found. Exiting program.")
         sys.exit(1)
     
     # Why end the program? In case there was a mistake when moving files around, we don't want to run the full program only to find out we're missing data later.

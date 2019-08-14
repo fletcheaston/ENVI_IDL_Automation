@@ -1,0 +1,17 @@
+# In progress.
+
+# Scenes is all the raster files in an array.
+# Background is the data ignore value.
+# Feathering distance is an array, all values are 5.
+# Color matching actions are all 'Adjust' except the last one, which is 'Reference'.
+# Feathering method is 'Seamline'.
+# Seamline method is 'Geometry'.
+
+mosaicRaster = ENVIMosaicRaster([{scenes}], BACKGROUND=0, FEATHERING_DISTANCE=[{featheringDistance}], COLOR_MATCHING_ACTIONS=[{colorMatchingActions}], FEATHERING_METHOD='Seamline', SEAMLINE_METHOD='Geometry')
+#  mosaicRaster = ENVIMosaicRaster([ENVIFIDToRaster(bandedFID_0), ENVIFIDToRaster(bandedFID_1)], BACKGROUND=0, FEATHERING_DISTANCE=[5, 5], COLOR_MATCHING_ACTIONS=['Adjust', 'Reference'], FEATHERING_METHOD='Seamline', SEAMLINE_METHOD='Geometry')
+
+
+# Display the result
+View = E.GetView()
+Layer = View.CreateLayer(mosaicRaster)
+View.Zoom, /FULL_EXTENT
