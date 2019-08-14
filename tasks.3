@@ -1,17 +1,29 @@
 # In progress.
 
-# Scenes is all the raster files in an array.
-# Background is the data ignore value.
-# Feathering distance is an array, all values are 5.
+Task = ENVITask('BuildMosaicRaster')
+
+# All the raster files in an array. Uses the FID, and ENVIFIDToRaster().
+Task.INPUT_RASTERS = [{inputRasters]
+
 # Color matching actions are all 'Adjust' except the last one, which is 'Reference'.
-# Feathering method is 'Seamline'.
-# Seamline method is 'Geometry'.
+Task.COLOR_MATCHING_ACTIONS = [{colorMatchingActions}]
 
-mosaicRaster = ENVIMosaicRaster([{scenes}], BACKGROUND=0, FEATHERING_DISTANCE=[{featheringDistance}], COLOR_MATCHING_ACTIONS=[{colorMatchingActions}], FEATHERING_METHOD='Seamline', SEAMLINE_METHOD='Geometry')
-#  mosaicRaster = ENVIMosaicRaster([ENVIFIDToRaster(bandedFID_0), ENVIFIDToRaster(bandedFID_1)], BACKGROUND=0, FEATHERING_DISTANCE=[5, 5], COLOR_MATCHING_ACTIONS=['Adjust', 'Reference'], FEATHERING_METHOD='Seamline', SEAMLINE_METHOD='Geometry')
+# We don't use any histogram color matching.
+Task.COLOR_MATCHING_METHOD = 'None'
 
+# Background is the data ignore value. In ENVI 5.3, the data ignore value is referenced using BACKGROUND. In later versions, the data ignore value is referenced using DATA_IGNORE_VALUE.
+Task.BACKGROUND = 0
 
-# Display the result
+# Feathering distance is an array, all values are 5.
+Task.FEATHERING_DISTANCE = [{featheringDistance]
+
+# Determines how the rasters are meshed together.
+Task.FEATHERING_METHOD = 'Seamline'
+Task.SEAMLINE_METHOD = 'Geometry'
+
+# Runs the task.
+Task.Execute
+
+# Adds the mosaic to the ENVI viewable interface.
 View = E.GetView()
-Layer = View.CreateLayer(mosaicRaster)
-View.Zoom, /FULL_EXTENT
+Layer = View.CreateLayer(Task.OUTPUT_RASTER)
