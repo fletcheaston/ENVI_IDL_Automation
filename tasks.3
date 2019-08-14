@@ -3,7 +3,7 @@
 Task = ENVITask('BuildMosaicRaster')
 
 # All the raster files in an array. Uses the FID, and ENVIFIDToRaster().
-Task.INPUT_RASTERS = [{inputRasters]
+Task.INPUT_RASTERS = [{inputRasters}]
 
 # Color matching actions are all 'Adjust' except the last one, which is 'Reference'.
 Task.COLOR_MATCHING_ACTIONS = [{colorMatchingActions}]
@@ -15,7 +15,7 @@ Task.COLOR_MATCHING_METHOD = 'None'
 Task.BACKGROUND = 0
 
 # Feathering distance is an array, all values are 5.
-Task.FEATHERING_DISTANCE = [{featheringDistance]
+Task.FEATHERING_DISTANCE = [{featheringDistance}]
 
 # Determines how the rasters are meshed together.
 Task.FEATHERING_METHOD = 'Seamline'
@@ -23,6 +23,8 @@ Task.SEAMLINE_METHOD = 'Geometry'
 
 # Runs the task.
 Task.Execute
+
+{mosaicRaster} = Task.OUTPUT_RASTER
 
 # Adds the mosaic to the ENVI viewable interface.
 View = E.GetView()

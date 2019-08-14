@@ -108,7 +108,7 @@ def getBandMathNumbers():
 
     # We subtract 1 because ENVI counts Bands starting at 1, but IDL counts Bands starting at 0.
     # We're converting from ENVI to IDL, so we subtract 1.
-    return([int(x) - 1 for x in numbers])
+    return([str(int(x) - 1) for x in numbers])
 
 
 # Takes two strings, an int, and an optional string.
@@ -122,8 +122,10 @@ def getBandMathNumbers():
 def getTaskTwoInstructions(FID, taskTwoFilename, count, tempDir="Z:\\temp"):
     geoRefFID = FID        
     bandMathExpression = "'{0}'".format(getBandMathExpression())
-    bandMathNumbers = getBandMathNumbers()
-    geoRefFIDArray = "{0}, ".format(FID) * (len(bandMathNumbers) - 1) + FID
+    bandMathNumbersList = getBandMathNumbers()
+    bandMathNumbers = ", ".join(bandMathNumbersList)
+    geoRefFIDArrayList = [FID for _ in range(len(bandMathNumbersList))]
+    geoRefFIDArray = ", ".join(geoRefFIDArrayList)
     bandedOutFile = "'{0}'".format(os.path.join(tempDir, "bandedOutFile_{0}".format(count)))
     bandedFID = "bandedFID_{0}".format(count)
 
@@ -135,3 +137,26 @@ def getTaskTwoInstructions(FID, taskTwoFilename, count, tempDir="Z:\\temp"):
         bandedFID=bandedFID).split("\n")
     
     return((allInstructions, bandedFID))
+
+# Takes a list of strings, a string, an int, and an optional string.
+# The list of strings contains the FID variable names for all of the band-math files.
+# The string is the relative filesystem path to the tasks.3 file, which provides the base instructions for IDL.
+# The int is the counter, to give each of the final variables in IDL unique names.
+# The optional string is a path of the temporary directory where we want to store intermediate files.
+# Returns a tuple, containing...
+# A list of strings, corresponding to the relevant IDL instructions.
+# A string, corresponding to the mosaic raster variable name.
+def getTaskThreeInstructions(FIDs, taskThreeFilename, count, tempDir="Z:\\temp"):
+    inputRasters = ", ".join(["ENVIFIDToRaster({0})".format(fid) for fid in FIDs])
+    colorMatchingActionsList = ["'Adjust'" for _ in FIDs]
+    colorMatchingActionsList[-1] = "'Reference'"
+    colorMatchingActions = ", ".join(colorMatchingActionsList)
+    featheringDistance = ", ".join(["5" for _ in FIDs])
+    mosaicRaster = "mosaicRaster_{0}".format(count)
+
+    allInstructions = getTaskFileLines(taskThreeFilename).format(inputRasters=inputRasters,
+        colorMatchingActions=colorMatchingActions,
+        featheringDistance=featheringDistance,
+        mosaicRaster=mosaicRaster).split("\n")
+    
+    return((allInstructions, mosaicRaster))

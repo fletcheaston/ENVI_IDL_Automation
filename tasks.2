@@ -1,4 +1,4 @@
-# In progress.
+# Complete!
 
 # Because we split the tasks here, we need to keep track of unique FIDs between tasks.
 # We can reuse the geoRefDims variable.
@@ -11,4 +11,4 @@ ENVI_FILE_QUERY, {geoRefFID}, dims=geoRefDims
 # OUT_NAME, which corresponds to the filename we're saving this to.
 # POS, which corresponds to the bands in the expression. Bands in the expression are sorted alphanumerically by ENVI, so the band numbers we provide in POS need to be in numerical order.
 # R_FID, which corresponds to the unique FID we hand off to task three.
-ENVI_DOIT, 'MATH_DOIT', DIMS=geoRefDims, EXP={bandMathExpression}, FID=[{geoRefFIDArray}], OUT_NAME={bandedOutFile}, POS={bandMathNumbers}, R_FID={bandedFID}
+ENVI_DOIT, 'MATH_DOIT', DIMS=geoRefDims, EXP={bandMathExpression}, FID=[{geoRefFIDArray}], OUT_NAME={bandedOutFile}, POS=[{bandMathNumbers}], R_FID={bandedFID}

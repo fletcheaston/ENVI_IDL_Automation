@@ -3,7 +3,7 @@ import tasks
 
 tasks.setup()
 
-pathNames = tasks.getFilePairs(r"Z:\Raw Data\2018\HYPERSPECTRAL_08242018NANO\vnirNuc")
+pathNames = tasks.getFilePairs(r"Test_Good")
 
 taskOneFIDs = []
 count = 0
@@ -26,3 +26,7 @@ for fid in taskOneFIDs:
         print(command)
     print()
     count += 1
+
+idlCommands, mosaicRaster = tasks.getTaskThreeInstructions(taskTwoFIDs, "tasks.3", 0)
+for command in idlCommands:
+    print(command)
