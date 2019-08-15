@@ -113,33 +113,67 @@ def getTaskOneInstructions(hsiFilename, igmFilename, taskOneFilename, count, tem
     return((allInstructions, refGltFID))
 
 
+def getAllExpressions(directory):
+    # Recursively walks through all the sub-directories in the specified directory.
+    for dirpath, _, allFiles in os.walk(directory):
+
+        # We're only looking for .exp files.
+        if(any(file.endswith(".exp") for file in allFiles)):
+
+            # We're now obtaining all of the .exp files in the current directory.
+            expFiles = [file for file in allFiles if file.endswith(".exp")]
+            expressions = [getBandMathExpression(os.path.join(os.path.abspath(directory), filename)) for filename in expFiles]
+        else:
+            logging.error("No .exp files found in {0}. Exiting program.".format(directory))
+            sys.exit(1)
+
+    return([(exp, parseBandsFromExpression(exp)) for exp in expressions])
+
+
+# Takes a string representing an expression.
+# All bands must be written as b#, where the # is any number 1 - 150.
+# Returns a sorted list of strings, each string the band number specified in the expression.
+def parseBandsFromExpression(string):
+    bands = set()
+    band = ""
+    foundBand = False
+
+    for char in string:
+        if(foundBand):
+            if(char.isdigit()):
+                band += char
+            else:
+                bands.add(int(band) - 1)
+                band = ""
+                foundBand = False
+        if(char.lower() == "b"):
+            foundBand = True
+
+    bands = list(bands)
+    bands.sort()
+    return([str(x) for x in bands])
+
+
 # Returns a string read from the bandMathExpression file.
-def getBandMathExpression():
-    with open("bandMathExpression", "r") as file:
+def getBandMathExpression(filename):
+    with open(filename, "r") as file:
+        header = file.readline()
         expression = file.readline().strip()
     return(expression)
 
 
-# Returns a list of numbers read from the bandMathNumbers file.
-def getBandMathNumbers():
-    with open("bandMathNumbers", "r") as file:
-        numbers = file.readline().split(',')
-
-    # We subtract 1 because ENVI counts Bands starting at 1, but IDL counts Bands starting at 0.
-    # We're converting from ENVI to IDL, so we subtract 1.
-    return([str(int(x) - 1) for x in numbers])
-
-
-# Takes a list of strings, two optional strings, and an optional function.
-# The list of strings corresponds to the FID variable names.
+# Takes a list of strings, a string, a list of strings, two optional strings, and an optional function.
+# The first list of strings corresponds to the FID variable names.
+# The first string is the expression we're running band math on.
+# The second list of strings is the bands we're running band math on.
 # The first optional string is the relative filesystem path to the tasks.2 file, which provides the base instructions for IDL.
 # The second optional string is a path of the temporary directory where we want to store intermediate files.
 # The optional function will be called on all the IDL commands.
-def runTaskTwo(taskOneFIDs, taskTwoFilename="tasks.2", tempDir="Z:\\temp", execute=print):
+def runTaskTwo(taskOneFIDs, expression, bandNumbers, taskTwoFilename="tasks.2", tempDir="Z:\\temp", execute=print):
     taskTwoFIDs = []
     count = 0
     for fid in taskOneFIDs:
-        idlCommands, uniqueFID = getTaskTwoInstructions(fid, "tasks.2", count)
+        idlCommands, uniqueFID = getTaskTwoInstructions(fid, expression, bandNumbers, "tasks.2", count)
         taskTwoFIDs.append(uniqueFID)
         for command in idlCommands:
             execute(command)
@@ -147,20 +181,21 @@ def runTaskTwo(taskOneFIDs, taskTwoFilename="tasks.2", tempDir="Z:\\temp", execu
     return(taskTwoFIDs)
 
 
-# Takes two strings, an int, and an optional string.
+# Takes two strings, a list of strings, a string, an int, and an optional string.
 # The first string is the variable name of a unique FID from task one.
-# The second string is the relative filesystem path to the tasks.2 file, which provides the base instructions for IDL.
+# The second string is the expression we're running band math on.
+# The list of strings is the bands we're running band math on.
+# The third string is the relative filesystem path to the tasks.2 file, which provides the base instructions for IDL.
 # The int is the counter, to give each of the final variables in IDL unique names.
 # The optional string is a path of the temporary directory where we want to store intermediate files.
 # Returns a tuple, containing...
 # A list of strings, corresponding to the relevant IDL instructions.
 # A string, corresponding to the refGltFID_count.
-def getTaskTwoInstructions(FID, taskTwoFilename, count, tempDir="Z:\\temp"):
+def getTaskTwoInstructions(FID, expression, bandNumbers, taskTwoFilename, count, tempDir="Z:\\temp"):
     geoRefFID = FID        
-    bandMathExpression = "'{0}'".format(getBandMathExpression())
-    bandMathNumbersList = getBandMathNumbers()
-    bandMathNumbers = ", ".join(bandMathNumbersList)
-    geoRefFIDArrayList = [FID for _ in range(len(bandMathNumbersList))]
+    bandMathExpression = "'{0}'".format(expression)
+    bandMathNumbers = ", ".join(bandNumbers)
+    geoRefFIDArrayList = [FID for _ in range(len(bandNumbers))]
     geoRefFIDArray = ", ".join(geoRefFIDArrayList)
     bandedOutFile = "'{0}'".format(os.path.join(tempDir, "bandedOutFile_{0}".format(count)))
     bandedFID = "bandedFID_{0}".format(count)
@@ -177,12 +212,12 @@ def getTaskTwoInstructions(FID, taskTwoFilename, count, tempDir="Z:\\temp"):
 
 # Takes a list of strings, an int, two optional strings, and an optional function.
 # The list of strings corresponds to the FID variable names.
-# The int is 
+# The int is the counter, to give each of the final variables in IDL unique names.
 # The first optional string is the relative filesystem path to the tasks.3 file, which provides the base instructions for IDL.
 # The second optional string is a path of the temporary directory where we want to store intermediate files.
 # The optional function will be called on all the IDL commands.
 def runTaskThree(taskTwoFIDs, count, taskThreeFilename="tasks.3", tempDir="Z:\\temp", execute=print):
-    idlCommands, mosaicRaster = getTaskThreeInstructions(taskTwoFIDs, taskThreeFilename, 0)
+    idlCommands, mosaicRaster = getTaskThreeInstructions(taskTwoFIDs, taskThreeFilename, count)
     for command in idlCommands:
         execute(command)
     return(mosaicRaster)
@@ -210,3 +245,23 @@ def getTaskThreeInstructions(FIDs, taskThreeFilename, count, tempDir="Z:\\temp")
         mosaicRaster=mosaicRaster).split("\n")
     
     return((allInstructions, mosaicRaster))
+
+
+# Takes a list of strings, an int, two optional strings, and an optional function.
+# The list of strings corresponds to the FID variable names.
+# The first optional string is the relative filesystem path to the tasks.4 file, which provides the base instructions for IDL.
+# The second optional string is a path of the temporary directory where we want to store intermediate files.
+# The optional function will be called on all the IDL commands.
+def runTaskFour(inputRaster, taskFourFilename="tasks.4", execute=print):
+    idlCommands = getTaskFourInstructions(inputRaster, taskFourFilename)
+    for command in idlCommands:
+        execute(command)
+
+
+# Takes two strings.
+# The first string is the name of the mosaicRaster variable.
+# The string is the relative filesystem path to the tasks.4 file, which provides the base instructions for IDL.
+# Returns a list of strings, corresponding to the relevant IDL instructions.
+def getTaskFourInstructions(inputRaster, taskFourFilename):
+    allInstructions = getTaskFileLines(taskFourFilename).format(inputRaster=inputRaster).split("\n")
+    return(allInstructions)

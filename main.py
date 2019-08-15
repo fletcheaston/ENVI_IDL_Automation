@@ -7,7 +7,10 @@ def dontPrint(string):
 
 tasks.setup()
 
-pathNames = tasks.getFilePairs(r"Z:\Raw Data\2018\HYPERSPECTRAL_08102018NANO\vnirNuc\20180810")
-taskOneFIDs = tasks.runTaskOne(pathNames, taskOneFilename="tasks.1", execute=print)
-taskTwoFIDs = tasks.runTaskTwo(taskOneFIDs, taskTwoFilename="tasks.2", execute=print)
-taskThreeRaster = tasks.runTaskThree(taskTwoFIDs, 0, taskThreeFilename="tasks.3", execute=print)
+pathNames = tasks.getFilePairs(r"Test_Good")
+taskOneFIDs = tasks.runTaskOne(pathNames, taskOneFilename="tasks.1", execute=dontPrint)
+expressionsAndBands = tasks.getAllExpressions(r"Expressions")
+for exp, bnds in expressionsAndBands:
+    taskTwoFIDs = tasks.runTaskTwo(taskOneFIDs, exp, bnds, taskTwoFilename="tasks.2", execute=dontPrint)
+    taskThreeRaster = tasks.runTaskThree(taskTwoFIDs, 0, taskThreeFilename="tasks.3", execute=dontPrint)
+    tasks.runTaskFour(taskThreeRaster, taskFourFilename="tasks.4", execute=print)

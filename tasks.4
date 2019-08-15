@@ -6,8 +6,4 @@ Task.CLASS_COLORS = [[114, 251, 253], [134, 219, 252], [154, 186, 251], [174, 15
 Task.CLASS_RANGES = [[-3,0], [0,6], [6,8], [8,10], [10,12], [12,14], [14,17]]
 Task.Execute
 
-{coloredRaster} = Task.OUTPUT_RASTER
-
-# Adds the mosaic to the ENVI viewable interface.
-View = E.GetView()
-Layer = View.CreateLayer(Task.OUTPUT_RASTER)
+Task.OUTPUT_RASTER.Export, E.GetTemporaryFilename(), 'TIFF'
