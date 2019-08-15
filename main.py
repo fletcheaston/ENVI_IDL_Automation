@@ -7,7 +7,7 @@ def dontPrint(string):
 
 tasks.setup()
 
-pathNames = tasks.getFilePairs(r"Test_Good")
+pathNames = tasks.getFilePairs(r"Z:\Raw Data\2018\HYPERSPECTRAL_08102018NANO\vnirNuc\20180810")
 taskOneFIDs = tasks.runTaskOne(pathNames, taskOneFilename="tasks.1", execute=print)
 taskTwoFIDs = tasks.runTaskTwo(taskOneFIDs, taskTwoFilename="tasks.2", execute=print)
 taskThreeRaster = tasks.runTaskThree(taskTwoFIDs, 0, taskThreeFilename="tasks.3", execute=print)
