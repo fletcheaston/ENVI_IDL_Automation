@@ -4,7 +4,7 @@ import sys
 import logging
 
 def setup():
-    logging.basicConfig(filename=r"Z:\temp\automatedENVI.log", filemode="w", format="%(name)s - %(levelname)s - %(message)s", level=logging.DEBUG)
+    logging.basicConfig(filename=r"Z:\temp\automatedENVI.log", filemode="a+", format="%(name)s - %(levelname)s - %(message)s", level=logging.DEBUG)
 
 # Takes a string specifying what directory to seach.
 # Returns a list of tuples, each tuples containing strings of absoulte filesystem paths.
@@ -77,7 +77,7 @@ def getTaskFileLines(taskFilename):
 # The second optional string is a path of the temporary directory where we want to store intermediate files.
 # The optional function will be called on all the IDL commands.
 # Returns a list of strings, corresponding to FID variable names.
-def runTaskOne(pathNames, taskOneFilename="tasks.1", tempDir="Z:\\temp", execute=print()):
+def runTaskOne(pathNames, taskOneFilename="tasks.1", tempDir="Z:\\temp", execute=print):
     taskOneFIDs = []
     count = 0
     for hsi, igm in pathNames:
