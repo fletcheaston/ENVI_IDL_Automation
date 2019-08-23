@@ -13,6 +13,5 @@ ENVI_FILE_QUERY, {geoRefFID}, dims=geoRefDims
 # R_FID, which corresponds to the unique FID we hand off to task three.
 ENVI_DOIT, 'MATH_DOIT', DIMS=geoRefDims, EXP={bandMathExpression}, FID=[{geoRefFIDArray}], OUT_NAME={bandedOutFile}, POS=[{bandMathNumbers}], R_FID={bandedFID}
 
-# Uncomment these next two lines if you want every banded file to be saved. Saving the files can be slow, as the files can be quite large.
-# tempOutputRaster = ENVIFIDToRaster({bandedFID})
-# tempOutputRaster.Export, E.GetTemporaryFilename(), 'TIFF'
+tempOutputRaster = ENVIFIDToRaster({bandedFID})
+tempOutputRaster.Export, {savePath}, 'TIFF'

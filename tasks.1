@@ -33,4 +33,4 @@ ENVI_DOIT, 'ENVI_GEOREF_FROM_GLT_DOIT', BACKGROUND=0, FID=dataFID, GLT_DIMS=gltD
 
 # Save all the georeferenced files to the filesystem.
 tempOutputRaster = ENVIFIDToRaster({refGltFID})
-tempOutputRaster.Export, E.GetTemporaryFilename(), 'TIFF'
+tempOutputRaster.Export, {savePath}, 'TIFF'

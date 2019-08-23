@@ -30,4 +30,4 @@ Task.Execute
 View = E.GetView()
 Layer = View.CreateLayer(Task.OUTPUT_RASTER)
 
-Task.OUTPUT_RASTER.Export, E.GetTemporaryFilename(), 'TIFF'
+Task.OUTPUT_RASTER.Export, {savePath}, 'TIFF'

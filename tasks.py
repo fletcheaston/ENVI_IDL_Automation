@@ -2,6 +2,7 @@
 import os
 import sys
 import logging
+from datetime import datetime
 
 def setup():
     logging.basicConfig(filename=r"Z:\temp\automatedENVI.log", filemode="a+", format="%(name)s - %(levelname)s - %(message)s", level=logging.DEBUG)
@@ -10,39 +11,40 @@ def setup():
 # Returns a list of tuples, each tuples containing strings of absoulte filesystem paths.
 # The path to a .hsi file is the first element in each tuple.
 # The path to an _igm file is the second element in each tuple.
-def getFilePairs(directory):
+def getFilePairsFromDirs(dirs):
     allPathPairs = []
     filePairErrors = 0
 
-    # Recursively walks through all the sub-directories in the specified directory.
-    for dirpath, _, allFiles in os.walk(directory):
-
-        # Each .hsi file requires a corresponding _igm file.
-        # These files don't have the same name, so we instead search for what the files end with.
-        # We're checking for at least one of each type in the current directory.
-        if(any(file.endswith(".hsi") for file in allFiles) and any(file.endswith("_igm") for file in allFiles)):
-
-            # We're now obtaining all of the .hsi and _igm files in the current directory.
-            # There may be more than one of each, which is a problem.
-            hsiFiles = [file for file in allFiles if file.endswith(".hsi")]
-            igmFiles = [file for file in allFiles if file.endswith("_igm")]
-
-            # Which is why we check to make sure exactly one of each is in the current directory.
-            # There can't be zero of either, as we wouldn't have gotten to this line in the program.
-            # However, there may be more than one of each. We print an error message and (eventually) end the program if this occurs.
-            # If an error occurs, add to the error counter, and display this upon sys.exit().
-            if(len(hsiFiles) != 1 or len(igmFiles) != 1):
-                if(len(hsiFiles) != 1):
-                    logging.warning("{0} .hsi files found in {1}, 1 required.".format(len(hsiFiles), os.path.abspath(dirpath)))
-                    filePairErrors += 1
-                if(len(igmFiles) != 1):
-                    logging.warning("{0} _igm files found in {1}, 1 required.".format(len(igmFiles), os.path.abspath(dirpath)))
-                    filePairErrors += 1
-            else:
-                # Throw the absolute paths into a tuple and append it to the list.
-                logging.info("{0},{1}: File pair found in {2}.".format(hsiFiles[0], igmFiles[0], os.path.abspath(dirpath)))
-                pathPair = (os.path.join(os.path.abspath(dirpath), hsiFiles[0]), os.path.join(os.path.abspath(dirpath), igmFiles[0]))
-                allPathPairs.append(pathPair)
+    for directory in dirs:
+        # Recursively walks through all the sub-directories in the specified directory.
+        for dirpath, _, allFiles in os.walk(directory):
+    
+            # Each .hsi file requires a corresponding _igm file.
+            # These files don't have the same name, so we instead search for what the files end with.
+            # We're checking for at least one of each type in the current directory.
+            if(any(file.endswith(".hsi") for file in allFiles) and any(file.endswith("_igm") for file in allFiles)):
+    
+                # We're now obtaining all of the .hsi and _igm files in the current directory.
+                # There may be more than one of each, which is a problem.
+                hsiFiles = [file for file in allFiles if file.endswith(".hsi")]
+                igmFiles = [file for file in allFiles if file.endswith("_igm")]
+    
+                # Which is why we check to make sure exactly one of each is in the current directory.
+                # There can't be zero of either, as we wouldn't have gotten to this line in the program.
+                # However, there may be more than one of each. We print an error message and (eventually) end the program if this occurs.
+                # If an error occurs, add to the error counter, and display this upon sys.exit().
+                if(len(hsiFiles) != 1 or len(igmFiles) != 1):
+                    if(len(hsiFiles) != 1):
+                        logging.warning("{0} .hsi files found in {1}, 1 required.".format(len(hsiFiles), os.path.abspath(dirpath)))
+                        filePairErrors += 1
+                    if(len(igmFiles) != 1):
+                        logging.warning("{0} _igm files found in {1}, 1 required.".format(len(igmFiles), os.path.abspath(dirpath)))
+                        filePairErrors += 1
+                else:
+                    # Throw the absolute paths into a tuple and append it to the list.
+                    logging.info("{0},{1}: File pair found in {2}.".format(hsiFiles[0], igmFiles[0], os.path.abspath(dirpath)))
+                    pathPair = (os.path.join(os.path.abspath(dirpath), hsiFiles[0]), os.path.join(os.path.abspath(dirpath), igmFiles[0]))
+                    allPathPairs.append(pathPair)
 
     if(filePairErrors > 0):
         # Notably, this can now detect extra .hsi or _igm files across multiple directories, and will alert the operator to all of them.
@@ -77,11 +79,11 @@ def getTaskFileLines(taskFilename):
 # The second optional string is a path of the temporary directory where we want to store intermediate files.
 # The optional function will be called on all the IDL commands.
 # Returns a list of strings, corresponding to FID variable names.
-def runTaskOne(pathNames, taskOneFilename="tasks.1", tempDir="Z:\\temp", execute=print):
+def runTaskOne(pathNames, taskOneFilename="tasks.1", execute=print, saveDir="Z:\\temp"):
     taskOneFIDs = []
     count = 0
     for hsi, igm in pathNames:
-        idlCommands, uniqueFID = getTaskOneInstructions(hsi, igm, taskOneFilename, count, tempDir=tempDir)
+        idlCommands, uniqueFID = getTaskOneInstructions(hsi, igm, count, taskOneFilename=taskOneFilename, saveDir=saveDir)
         taskOneFIDs.append(uniqueFID)
         for command in idlCommands:
             execute(command)
@@ -93,27 +95,29 @@ def runTaskOne(pathNames, taskOneFilename="tasks.1", tempDir="Z:\\temp", execute
 # Takes three strings, an int, and an optional string.
 # The first string is the absolute filesystem path to the relevant .hsi file.
 # The second string is the absolute filesystem path to the relevant _igm file.
-# The third string is the relative filesystem path to the tasks.1 file, which provides the base instructions for IDL.
 # The int is the counter, to give each of the final variables in IDL unique names.
-# The optional string is a path of the temporary directory where we want to store intermediate files.
+# The first optional string is the relative filesystem path to the tasks.1 file, which provides the base instructions for IDL.
+# The second optional string is a path of the temporary directory where we want to store intermediate files.
 # Returns a tuple, containing...
 # A list of strings, corresponding to the relevant IDL instructions.
 # A string, corresponding to the refGltFID_count.
-def getTaskOneInstructions(hsiFilename, igmFilename, taskOneFilename, count, tempDir="Z:\\temp"):
+def getTaskOneInstructions(hsiFilename, igmFilename, count, taskOneFilename="tasks.1", saveDir="Z:\\temp"):
     hsiFile = "'{0}'".format(hsiFilename)
     igmFile = "'{0}'".format(igmFilename)
-    refGltFile = "'{0}'".format(os.path.join(tempDir, "refGltFile_{0}".format(count)))
+    refGltFile = "'{0}'".format(os.path.join(saveDir, "refGltFile_{0}".format(count)))
     refGltFID = "refGltFID_{0}".format(count)
+    savePath = "'{0}'".format(os.path.join(saveDir, "georeferencedFile_{0}_{1}".format(count, datetime.now().strftime("%Y-%m-%d %H:%M:%S"))))
 
     allInstructions = getTaskFileLines(taskOneFilename).format(hsiFile=hsiFile,
         igmFile=igmFile,
         refGltFile=refGltFile,
-        refGltFID=refGltFID).split("\n")
+        refGltFID=refGltFID,
+        savePath=savePath).split("\n")
     
     return((allInstructions, refGltFID))
 
 
-def getAllExpressions(directory):
+def getAllExpressionsFromDirectory(directory):
     # Recursively walks through all the sub-directories in the specified directory.
     for dirpath, _, allFiles in os.walk(directory):
 
@@ -128,6 +132,25 @@ def getAllExpressions(directory):
             sys.exit(1)
 
     return([(exp, parseBandsFromExpression(exp)) for exp in expressions])
+
+
+# Takes a list of strings, each string representing the absolute path to a file in the filesystem.
+# Returns a list of tuples, containing the expression in the file, and the bands associated with that expression.
+def getExpressionsFromMultiFiles(files):
+    return([getExpressionFromFile(file) for file in files])
+
+
+# Takes a string representing the absolute path to a file in the filesystem.
+# Returns a tuple containing the expression in the file, and the bands associated with that expression.
+def getExpressionFromFile(file):
+    # Throw an error if the file isn't a .exp file.
+    if(file.endswith(".exp")):
+        expression = getBandMathExpression(file)
+        return((expression, parseBandsFromExpression(expression)))
+
+    else:
+        logging.error("{0} is not a .exp file. Exiting program.".format(file))
+        sys.exit(1)
 
 
 # Takes a string representing an expression.
@@ -166,18 +189,19 @@ def getBandMathExpression(filename):
 # The first list of strings corresponds to the FID variable names.
 # The first string is the expression we're running band math on.
 # The second list of strings is the bands we're running band math on.
+# The int is the counter, to give each of the final variables in IDL unique names.
 # The first optional string is the relative filesystem path to the tasks.2 file, which provides the base instructions for IDL.
 # The second optional string is a path of the temporary directory where we want to store intermediate files.
 # The optional function will be called on all the IDL commands.
-def runTaskTwo(taskOneFIDs, expression, bandNumbers, taskTwoFilename="tasks.2", tempDir="Z:\\temp", execute=print):
+def runTaskTwo(taskOneFIDs, expression, bandNumbers, count, taskTwoFilename="tasks.2", execute=print, saveDir="Z:\\temp"):
     taskTwoFIDs = []
-    count = 0
+    fidCount = 0
     for fid in taskOneFIDs:
-        idlCommands, uniqueFID = getTaskTwoInstructions(fid, expression, bandNumbers, "tasks.2", count)
+        idlCommands, uniqueFID = getTaskTwoInstructions(fid, expression, bandNumbers, fidCount, count, taskTwoFilename=taskTwoFilename,  saveDir=saveDir)
         taskTwoFIDs.append(uniqueFID)
         for command in idlCommands:
             execute(command)
-        count += 1
+        fidCount += 1
     return(taskTwoFIDs)
 
 
@@ -185,27 +209,29 @@ def runTaskTwo(taskOneFIDs, expression, bandNumbers, taskTwoFilename="tasks.2", 
 # The first string is the variable name of a unique FID from task one.
 # The second string is the expression we're running band math on.
 # The list of strings is the bands we're running band math on.
-# The third string is the relative filesystem path to the tasks.2 file, which provides the base instructions for IDL.
 # The int is the counter, to give each of the final variables in IDL unique names.
-# The optional string is a path of the temporary directory where we want to store intermediate files.
+# The first optional string is the relative filesystem path to the tasks.2 file, which provides the base instructions for IDL.
+# The second optional string is a path of the temporary directory where we want to store intermediate files.
 # Returns a tuple, containing...
 # A list of strings, corresponding to the relevant IDL instructions.
 # A string, corresponding to the refGltFID_count.
-def getTaskTwoInstructions(FID, expression, bandNumbers, taskTwoFilename, count, tempDir="Z:\\temp"):
+def getTaskTwoInstructions(FID, expression, bandNumbers, fidCount, count, taskTwoFilename="tasks.2", saveDir="Z:\\temp"):
     geoRefFID = FID        
     bandMathExpression = "'{0}'".format(expression)
     bandMathNumbers = ", ".join(bandNumbers)
     geoRefFIDArrayList = [FID for _ in range(len(bandNumbers))]
     geoRefFIDArray = ", ".join(geoRefFIDArrayList)
-    bandedOutFile = "'{0}'".format(os.path.join(tempDir, "bandedOutFile_{0}".format(count)))
-    bandedFID = "bandedFID_{0}".format(count)
+    bandedOutFile = "'{0}'".format(os.path.join(saveDir, "bandedMathFilee_{0}".format(fidCount)))
+    bandedFID = "bandedFID_{0}".format(fidCount)
+    savePath = "'{0}'".format(os.path.join(saveDir, "bandedMathFile_{0}_{1}_{2}".format(count, fidCount, datetime.now().strftime("%Y-%m-%d %H:%M:%S"))))
 
     allInstructions = getTaskFileLines(taskTwoFilename).format(geoRefFID=geoRefFID,
         bandMathExpression=bandMathExpression,
         bandMathNumbers=bandMathNumbers,
         geoRefFIDArray=geoRefFIDArray,
         bandedOutFile=bandedOutFile,
-        bandedFID=bandedFID).split("\n")
+        bandedFID=bandedFID,
+        savePath=savePath).split("\n")
     
     return((allInstructions, bandedFID))
 
@@ -216,8 +242,8 @@ def getTaskTwoInstructions(FID, expression, bandNumbers, taskTwoFilename, count,
 # The first optional string is the relative filesystem path to the tasks.3 file, which provides the base instructions for IDL.
 # The second optional string is a path of the temporary directory where we want to store intermediate files.
 # The optional function will be called on all the IDL commands.
-def runTaskThree(taskTwoFIDs, count, taskThreeFilename="tasks.3", tempDir="Z:\\temp", execute=print):
-    idlCommands, mosaicRaster = getTaskThreeInstructions(taskTwoFIDs, taskThreeFilename, count)
+def runTaskThree(taskTwoFIDs, count, taskThreeFilename="tasks.3", execute=print, saveDir="Z:\\temp"):
+    idlCommands, mosaicRaster = getTaskThreeInstructions(taskTwoFIDs, count, taskThreeFilename=taskThreeFilename,  saveDir=saveDir)
     for command in idlCommands:
         execute(command)
     return(mosaicRaster)
@@ -225,24 +251,26 @@ def runTaskThree(taskTwoFIDs, count, taskThreeFilename="tasks.3", tempDir="Z:\\t
 
 # Takes a list of strings, a string, an int, and an optional string.
 # The list of strings contains the FID variable names for all of the band-math files.
-# The string is the relative filesystem path to the tasks.3 file, which provides the base instructions for IDL.
 # The int is the counter, to give each of the final variables in IDL unique names.
-# The optional string is a path of the temporary directory where we want to store intermediate files.
+# The first optional string is the relative filesystem path to the tasks.3 file, which provides the base instructions for IDL.
+# The second optional string is a path of the temporary directory where we want to store intermediate files.
 # Returns a tuple, containing...
 # A list of strings, corresponding to the relevant IDL instructions.
 # A string, corresponding to the mosaic raster variable name.
-def getTaskThreeInstructions(FIDs, taskThreeFilename, count, tempDir="Z:\\temp"):
+def getTaskThreeInstructions(FIDs, count, taskThreeFilename="tasks.3", saveDir="Z:\\temp"):
     inputRasters = ", ".join(["ENVIFIDToRaster({0})".format(fid) for fid in FIDs])
     colorMatchingActionsList = ["'Adjust'" for _ in FIDs]
     colorMatchingActionsList[-1] = "'Reference'"
     colorMatchingActions = ", ".join(colorMatchingActionsList)
     featheringDistance = ", ".join(["0" for _ in FIDs])
     mosaicRaster = "mosaicRaster_{0}".format(count)
+    savePath = "'{0}'".format(os.path.join(saveDir, "dataMosaicFile_{0}_{1}".format(count, datetime.now().strftime("%Y-%m-%d %H:%M:%S"))))
 
     allInstructions = getTaskFileLines(taskThreeFilename).format(inputRasters=inputRasters,
         colorMatchingActions=colorMatchingActions,
         featheringDistance=featheringDistance,
-        mosaicRaster=mosaicRaster).split("\n")
+        mosaicRaster=mosaicRaster,
+        savePath=savePath).split("\n")
     
     return((allInstructions, mosaicRaster))
 
@@ -252,16 +280,20 @@ def getTaskThreeInstructions(FIDs, taskThreeFilename, count, tempDir="Z:\\temp")
 # The first optional string is the relative filesystem path to the tasks.4 file, which provides the base instructions for IDL.
 # The second optional string is a path of the temporary directory where we want to store intermediate files.
 # The optional function will be called on all the IDL commands.
-def runTaskFour(inputRaster, taskFourFilename="tasks.4", execute=print):
-    idlCommands = getTaskFourInstructions(inputRaster, taskFourFilename)
+def runTaskFour(inputRaster, count, taskFourFilename="tasks.4", execute=print, saveDir="Z:\\temp"):
+    idlCommands = getTaskFourInstructions(inputRaster, count, taskFourFilename=taskFourFilename,  saveDir=saveDir)
     for command in idlCommands:
         execute(command)
 
 
 # Takes two strings.
 # The first string is the name of the mosaicRaster variable.
-# The string is the relative filesystem path to the tasks.4 file, which provides the base instructions for IDL.
+# The first optional string is the relative filesystem path to the tasks.4 file, which provides the base instructions for IDL.
+# The second optional string is a path of the temporary directory where we want to store intermediate files.
 # Returns a list of strings, corresponding to the relevant IDL instructions.
-def getTaskFourInstructions(inputRaster, taskFourFilename):
-    allInstructions = getTaskFileLines(taskFourFilename).format(inputRaster=inputRaster).split("\n")
+def getTaskFourInstructions(inputRaster, count, taskFourFilename="tasks.4", saveDir="Z:\\temp"):
+    savePath = "'{0}'".format(os.path.join(saveDir, "coloredMosaicFile_{0}_{1}".format(count, datetime.now().strftime("%Y-%m-%d %H:%M:%S"))))
+
+    allInstructions = getTaskFileLines(taskFourFilename).format(inputRaster=inputRaster,
+        savePath=savePath).split("\n")
     return(allInstructions)
