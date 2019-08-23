@@ -236,7 +236,7 @@ def getTaskThreeInstructions(FIDs, taskThreeFilename, count, tempDir="Z:\\temp")
     colorMatchingActionsList = ["'Adjust'" for _ in FIDs]
     colorMatchingActionsList[-1] = "'Reference'"
     colorMatchingActions = ", ".join(colorMatchingActionsList)
-    featheringDistance = ", ".join(["5" for _ in FIDs])
+    featheringDistance = ", ".join(["0" for _ in FIDs])
     mosaicRaster = "mosaicRaster_{0}".format(count)
 
     allInstructions = getTaskFileLines(taskThreeFilename).format(inputRasters=inputRasters,

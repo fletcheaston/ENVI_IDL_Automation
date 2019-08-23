@@ -2,7 +2,9 @@
 
 Task = ENVITask('ColorSliceClassification')
 Task.INPUT_RASTER = {inputRaster}
-Task.CLASS_COLORS = [[114, 251, 253], [134, 219, 252], [154, 186, 251], [174, 154, 250], [194, 121, 249], [214, 89, 248], [234, 56, 247]]
+
+# Black, light green, green, dark green, yellow, red, pink/magenta
+Task.CLASS_COLORS = [[0, 0, 0], [159, 248, 133], [103, 220, 71], [63, 134, 40], [241, 240, 80], [175, 37, 23], [224, 53, 225]]
 Task.CLASS_RANGES = [[-3,0], [0,6], [6,8], [8,10], [10,12], [12,14], [14,17]]
 Task.Execute
 
