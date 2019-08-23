@@ -106,7 +106,7 @@ def getTaskOneInstructions(hsiFilename, igmFilename, count, taskOneFilename="tas
     igmFile = "'{0}'".format(igmFilename)
     refGltFile = "'{0}'".format(os.path.join(saveDir, "refGltFile_{0}".format(count)))
     refGltFID = "refGltFID_{0}".format(count)
-    savePath = "'{0}'".format(os.path.join(saveDir, "georeferencedFile_{0}_{1}".format(count, datetime.now().strftime("%Y-%m-%d %H:%M:%S"))))
+    savePath = "'{0}'".format(os.path.join(saveDir, "georeferencedFile_{0}_{1}".format(count, datetime.now().strftime("%Y-%m-%d %H_%M_%S"))))
 
     allInstructions = getTaskFileLines(taskOneFilename).format(hsiFile=hsiFile,
         igmFile=igmFile,
@@ -223,7 +223,7 @@ def getTaskTwoInstructions(FID, expression, bandNumbers, fidCount, count, taskTw
     geoRefFIDArray = ", ".join(geoRefFIDArrayList)
     bandedOutFile = "'{0}'".format(os.path.join(saveDir, "bandedMathFilee_{0}".format(fidCount)))
     bandedFID = "bandedFID_{0}".format(fidCount)
-    savePath = "'{0}'".format(os.path.join(saveDir, "bandedMathFile_{0}_{1}_{2}".format(count, fidCount, datetime.now().strftime("%Y-%m-%d %H:%M:%S"))))
+    savePath = "'{0}'".format(os.path.join(saveDir, "bandedMathFile_{0}_{1}_{2}".format(count, fidCount, datetime.now().strftime("%Y-%m-%d %H_%M_%S"))))
 
     allInstructions = getTaskFileLines(taskTwoFilename).format(geoRefFID=geoRefFID,
         bandMathExpression=bandMathExpression,
@@ -264,7 +264,7 @@ def getTaskThreeInstructions(FIDs, count, taskThreeFilename="tasks.3", saveDir="
     colorMatchingActions = ", ".join(colorMatchingActionsList)
     featheringDistance = ", ".join(["0" for _ in FIDs])
     mosaicRaster = "mosaicRaster_{0}".format(count)
-    savePath = "'{0}'".format(os.path.join(saveDir, "dataMosaicFile_{0}_{1}".format(count, datetime.now().strftime("%Y-%m-%d %H:%M:%S"))))
+    savePath = "'{0}'".format(os.path.join(saveDir, "dataMosaicFile_{0}_{1}".format(count, datetime.now().strftime("%Y-%m-%d %H_%M_%S"))))
 
     allInstructions = getTaskFileLines(taskThreeFilename).format(inputRasters=inputRasters,
         colorMatchingActions=colorMatchingActions,
@@ -292,7 +292,7 @@ def runTaskFour(inputRaster, count, taskFourFilename="tasks.4", execute=print, s
 # The second optional string is a path of the temporary directory where we want to store intermediate files.
 # Returns a list of strings, corresponding to the relevant IDL instructions.
 def getTaskFourInstructions(inputRaster, count, taskFourFilename="tasks.4", saveDir="Z:\\temp"):
-    savePath = "'{0}'".format(os.path.join(saveDir, "coloredMosaicFile_{0}_{1}".format(count, datetime.now().strftime("%Y-%m-%d %H:%M:%S"))))
+    savePath = "'{0}'".format(os.path.join(saveDir, "coloredMosaicFile_{0}_{1}".format(count, datetime.now().strftime("%Y-%m-%d %H_%M_%S"))))
 
     allInstructions = getTaskFileLines(taskFourFilename).format(inputRaster=inputRaster,
         savePath=savePath).split("\n")
