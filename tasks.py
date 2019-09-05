@@ -83,6 +83,8 @@ def functionOption(config, section, option):
     if(option == "type"):
         return(None)
 
+    if(config.get(section, option).startswith("!")):
+        return("{0}".format(config.get(section, option).strip("!")))
     try:
         if(config.getfloat(section, option).is_integer()):
             return("{0}={1}".format(option.upper(), config.getint(section, option)))
@@ -100,6 +102,9 @@ def functionOption(config, section, option):
 def taskOption(taskName, config, section, option, arrayLen=None):
     if(option == "type"):
         return(None)
+    
+    if(config.get(section, option).startswith("!")):
+        return("{0}".format(config.get(section, option).strip("!")))
 
     if(config.get(section, option).startswith("#")):
         try:
