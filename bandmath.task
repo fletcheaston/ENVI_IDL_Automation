@@ -1,0 +1,8 @@
+# Complete!
+
+ENVI_FILE_QUERY, {geoRefFID}, dims=geoRefDims
+
+ENVI_DOIT, 'MATH_DOIT', DIMS=geoRefDims, FID=[{geoRefFIDArray}], OUT_NAME={bandedOutFile}, POS=[{bandMathNumbers}], R_FID={bandedFID}, {MATH_DOIT_Parameters}
+
+tempOutputRaster = ENVIFIDToRaster({bandedFID})
+tempOutputRaster.Export, {savePath}, {EXPORT_Parameters}

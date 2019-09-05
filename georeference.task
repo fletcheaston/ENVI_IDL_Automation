@@ -1,0 +1,19 @@
+# Complete!
+
+dataRaster = E.OpenRaster({hsiFile})
+locationRaster = E.OpenRaster({igmFile})
+
+dataFID = ENVIRastertoFID(dataRaster)
+locationFID = ENVIRastertoFID(locationRaster)
+
+inputProjection = ENVI_PROJ_CREATE(/geographic)
+ENVI_FILE_QUERY, locationFID, DIMS=locationDims
+
+ENVI_DOIT, 'ENVI_GLT_DOIT', DIMS=locationDims, I_PROJ=inputProjection, O_PROJ=inputProjection, R_FID=gltFID, OUT_NAME=tempGltFile, X_FID=locationFID, Y_FID=locationFID, {ENVI_GLT_DOIT_Parameters}
+
+ENVI_FILE_QUERY, gltFID, DIMS=gltDims
+
+ENVI_DOIT, 'ENVI_GEOREF_FROM_GLT_DOIT', FID=dataFID, GLT_DIMS=gltDims, GLT_FID=gltFID, OUT_NAME={refGltFile}, R_FID={refGltFID}, {ENVI_GEOREF_FROM_GLT_DOIT_Parameters}
+
+tempOutputRaster = ENVIFIDToRaster({refGltFID})
+tempOutputRaster.Export, {savePath}, {EXPORT_Parameters}

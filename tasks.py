@@ -5,7 +5,12 @@ import logging
 from datetime import datetime
 
 def setup():
-    logging.basicConfig(filename=r"Z:\temp\automatedENVI.log", filemode="a+", format="%(name)s - %(levelname)s - %(message)s", level=logging.DEBUG)
+    logging.basicConfig(filename=r"automatedENVI.log", filemode="a+", format="%(name)s - %(levelname)s - %(message)s", level=logging.DEBUG)
+
+
+def datetimeString():
+    return(datetime.now().strftime("%Y-%m-%d-%H-%M-%S"))
+
 
 # Takes a string specifying what directory to seach.
 # Returns a list of tuples, each tuples containing strings of absoulte filesystem paths.
@@ -73,84 +78,103 @@ def getTaskFileLines(taskFilename):
     return(allLines)
 
 
-# Takes a list of tuples, two optional strings, and an optional function.
-# The list of tuples contains strings of the .hsi/_igm file paris.
-# The first optional string is the relative filesystem path to the tasks.1 file, which provides the base instructions for IDL.
-# The second optional string is a path of the temporary directory where we want to store intermediate files.
-# The optional function will be called on all the IDL commands.
+# Returns the stringified option for functions if the option is considered valid.
+def functionOption(config, section, option):
+    if(option == "type"):
+        return(None)
+
+    try:
+        if(config.getfloat(section, option).is_integer()):
+            return("{0}={1}".format(option.upper(), config.getint(section, option)))
+        else:
+            return("{0}={1}".format(option.upper(), config.getfloat(section, option)))
+    except:
+        try:
+            if(config.getboolean(section, option)):
+                return(option.upper())
+        except:
+            return("{0}={1}".format(option.upper(), config.get(section, option)))
+
+
+# Returns the stringified option for tasks if the option is considered valid.
+def taskOption(taskName, config, section, option, arrayLen=None):
+    if(option == "type"):
+        return(None)
+
+    if(config.get(section, option).startswith("#")):
+        try:
+            return("{0}.{1}={2}".format(taskName, option.upper(), [int(config.get(section, option).strip("#")) for _ in range(arrayLen)]))
+        except:
+            return("{0}.{1}={2}".format(taskName, option.upper(), [config.get(section, option).strip("#") for _ in range(arrayLen)]))
+
+    try:
+        if(config.getfloat(section, option).is_integer()):
+            return("{0}.{1}={2}".format(taskName, option.upper(), config.getint(section, option)))
+        else:
+            return("{0}.{1}={2}".format(taskName, option.upper(), config.getfloat(section, option)))
+    except:
+        try:
+            if(config.getboolean(section, option)):
+                return("{0}.{1}".format(taskName, option.upper()))
+        except:
+            return("{0}.{1}={2}".format(taskName, option.upper(), config.get(section, option)))
+
+
+# Reads the config file for the parameters of the specified section.
+# Returns a string formatted for the parameters of that section.
+def getConfigParameters(config, section, taskName=None, arrayLen=None):
+    parameters = ""
+    allValidOptions = []
+    
+    if(config.get(section, "type") == "function"):
+        allValidOptions = [functionOption(config, section, option) for option in config.options(section) if(functionOption(config, section, option))]
+        parameters = ", ".join(allValidOptions)    
+
+    elif(config.get(section, "type") == "task"):
+        allValidOptions = [taskOption(taskName, config, section, option, arrayLen=arrayLen) for option in config.options(section) if(taskOption(taskName, config, section, option, arrayLen=arrayLen))]
+        parameters = "\n".join(allValidOptions)
+
+    return(parameters)
+
+
 # Returns a list of strings, corresponding to FID variable names.
-def runTaskOne(pathNames, taskOneFilename="tasks.1", execute=print, saveDir="Z:\\temp"):
+def runTaskOne(pathNames, config, execute=print, taskOneFilename="georeference.task", saveDir="temp"):
     taskOneFIDs = []
     count = 0
     for hsi, igm in pathNames:
-        idlCommands, uniqueFID = getTaskOneInstructions(hsi, igm, count, taskOneFilename=taskOneFilename, saveDir=saveDir)
+        idlCommands, uniqueFID = getTaskOneInstructions(hsi, igm, config, count, taskOneFilename=taskOneFilename, saveDir=saveDir)
         taskOneFIDs.append(uniqueFID)
         for command in idlCommands:
             execute(command)
         count += 1
-    
+
     return(taskOneFIDs)
 
 
-# Takes three strings, an int, and an optional string.
-# The first string is the absolute filesystem path to the relevant .hsi file.
-# The second string is the absolute filesystem path to the relevant _igm file.
-# The int is the counter, to give each of the final variables in IDL unique names.
-# The first optional string is the relative filesystem path to the tasks.1 file, which provides the base instructions for IDL.
-# The second optional string is a path of the temporary directory where we want to store intermediate files.
 # Returns a tuple, containing...
 # A list of strings, corresponding to the relevant IDL instructions.
 # A string, corresponding to the refGltFID_count.
-def getTaskOneInstructions(hsiFilename, igmFilename, count, taskOneFilename="tasks.1", saveDir="Z:\\temp"):
+def getTaskOneInstructions(hsiFilename, igmFilename, config, count, taskOneFilename="georeference.task", saveDir="temp"):
     hsiFile = "'{0}'".format(hsiFilename)
     igmFile = "'{0}'".format(igmFilename)
     refGltFile = "'{0}'".format(os.path.join(saveDir, "refGltFile_{0}".format(count)))
     refGltFID = "refGltFID_{0}".format(count)
-    savePath = "'{0}'".format(os.path.join(saveDir, "georeferencedFile_{0}_{1}".format(count, datetime.now().strftime("%Y-%m-%d %H_%M_%S"))))
+    savePath = "'{0}'".format(os.path.join(saveDir, "georeferencedFile_{0}_{1}".format(count, datetimeString())))
+
+    ENVI_GLT_DOIT_Parameters = getConfigParameters(config, "ENVI_GLT_DOIT")
+    ENVI_GEOREF_FROM_GLT_DOIT_Parameters = getConfigParameters(config, "ENVI_GEOREF_FROM_GLT_DOIT")
+    EXPORT_Parameters = getConfigParameters(config, "EXPORT")
 
     allInstructions = getTaskFileLines(taskOneFilename).format(hsiFile=hsiFile,
         igmFile=igmFile,
         refGltFile=refGltFile,
         refGltFID=refGltFID,
-        savePath=savePath).split("\n")
+        savePath=savePath,
+        ENVI_GLT_DOIT_Parameters=ENVI_GLT_DOIT_Parameters,
+        ENVI_GEOREF_FROM_GLT_DOIT_Parameters=ENVI_GEOREF_FROM_GLT_DOIT_Parameters,
+        EXPORT_Parameters=EXPORT_Parameters).split("\n")
     
     return((allInstructions, refGltFID))
-
-
-def getAllExpressionsFromDirectory(directory):
-    # Recursively walks through all the sub-directories in the specified directory.
-    for dirpath, _, allFiles in os.walk(directory):
-
-        # We're only looking for .exp files.
-        if(any(file.endswith(".exp") for file in allFiles)):
-
-            # We're now obtaining all of the .exp files in the current directory.
-            expFiles = [file for file in allFiles if file.endswith(".exp")]
-            expressions = [getBandMathExpression(os.path.join(os.path.abspath(directory), filename)) for filename in expFiles]
-        else:
-            logging.error("No .exp files found in {0}. Exiting program.".format(directory))
-            sys.exit(1)
-
-    return([(exp, parseBandsFromExpression(exp)) for exp in expressions])
-
-
-# Takes a list of strings, each string representing the absolute path to a file in the filesystem.
-# Returns a list of tuples, containing the expression in the file, and the bands associated with that expression.
-def getExpressionsFromMultiFiles(files):
-    return([getExpressionFromFile(file) for file in files])
-
-
-# Takes a string representing the absolute path to a file in the filesystem.
-# Returns a tuple containing the expression in the file, and the bands associated with that expression.
-def getExpressionFromFile(file):
-    # Throw an error if the file isn't a .exp file.
-    if(file.endswith(".exp")):
-        expression = getBandMathExpression(file)
-        return((expression, parseBandsFromExpression(expression)))
-
-    else:
-        logging.error("{0} is not a .exp file. Exiting program.".format(file))
-        sys.exit(1)
 
 
 # Takes a string representing an expression.
@@ -177,27 +201,12 @@ def parseBandsFromExpression(string):
     return([str(x) for x in bands])
 
 
-# Returns a string read from the bandMathExpression file.
-def getBandMathExpression(filename):
-    with open(filename, "r") as file:
-        header = file.readline()
-        expression = file.readline().strip()
-    return(expression)
-
-
-# Takes a list of strings, a string, a list of strings, two optional strings, and an optional function.
-# The first list of strings corresponds to the FID variable names.
-# The first string is the expression we're running band math on.
-# The second list of strings is the bands we're running band math on.
-# The int is the counter, to give each of the final variables in IDL unique names.
-# The first optional string is the relative filesystem path to the tasks.2 file, which provides the base instructions for IDL.
-# The second optional string is a path of the temporary directory where we want to store intermediate files.
-# The optional function will be called on all the IDL commands.
-def runTaskTwo(taskOneFIDs, expression, bandNumbers, count, taskTwoFilename="tasks.2", execute=print, saveDir="Z:\\temp"):
+# Returns a list of strings, corresponding to FID variable names.
+def runTaskTwo(taskOneFIDs, config, taskTwoFilename="bandmath.task", execute=print, saveDir="temp"):
     taskTwoFIDs = []
     fidCount = 0
     for fid in taskOneFIDs:
-        idlCommands, uniqueFID = getTaskTwoInstructions(fid, expression, bandNumbers, fidCount, count, taskTwoFilename=taskTwoFilename,  saveDir=saveDir)
+        idlCommands, uniqueFID = getTaskTwoInstructions(fid, config, fidCount, taskTwoFilename=taskTwoFilename, saveDir=saveDir)
         taskTwoFIDs.append(uniqueFID)
         for command in idlCommands:
             execute(command)
@@ -205,95 +214,61 @@ def runTaskTwo(taskOneFIDs, expression, bandNumbers, count, taskTwoFilename="tas
     return(taskTwoFIDs)
 
 
-# Takes two strings, a list of strings, a string, an int, and an optional string.
-# The first string is the variable name of a unique FID from task one.
-# The second string is the expression we're running band math on.
-# The list of strings is the bands we're running band math on.
-# The int is the counter, to give each of the final variables in IDL unique names.
-# The first optional string is the relative filesystem path to the tasks.2 file, which provides the base instructions for IDL.
-# The second optional string is a path of the temporary directory where we want to store intermediate files.
 # Returns a tuple, containing...
 # A list of strings, corresponding to the relevant IDL instructions.
 # A string, corresponding to the refGltFID_count.
-def getTaskTwoInstructions(FID, expression, bandNumbers, fidCount, count, taskTwoFilename="tasks.2", saveDir="Z:\\temp"):
+def getTaskTwoInstructions(FID, config, fidCount, taskTwoFilename="bandmath.task", saveDir="temp"):
     geoRefFID = FID        
-    bandMathExpression = "'{0}'".format(expression)
-    bandMathNumbers = ", ".join(bandNumbers)
-    geoRefFIDArrayList = [FID for _ in range(len(bandNumbers))]
+    bandMathNumbers = ", ".join(parseBandsFromExpression(config.get("MATH_DOIT", "EXP")))
+    geoRefFIDArrayList = [FID for _ in range(len(parseBandsFromExpression(config.get("MATH_DOIT", "EXP"))))]
     geoRefFIDArray = ", ".join(geoRefFIDArrayList)
-    bandedOutFile = "'{0}'".format(os.path.join(saveDir, "bandedMathFilee_{0}".format(fidCount)))
+    bandedOutFile = "'{0}'".format(os.path.join(saveDir, "bandedMathFile_{0}".format(fidCount)))
     bandedFID = "bandedFID_{0}".format(fidCount)
-    savePath = "'{0}'".format(os.path.join(saveDir, "bandedMathFile_{0}_{1}_{2}".format(count, fidCount, datetime.now().strftime("%Y-%m-%d %H_%M_%S"))))
+    savePath = "'{0}'".format(os.path.join(saveDir, "bandedMathFile_{0}_{1}".format(fidCount, datetimeString())))
+
+    MATH_DOIT_Parameters = getConfigParameters(config, "MATH_DOIT")
+    EXPORT_Parameters = getConfigParameters(config, "EXPORT")
 
     allInstructions = getTaskFileLines(taskTwoFilename).format(geoRefFID=geoRefFID,
-        bandMathExpression=bandMathExpression,
         bandMathNumbers=bandMathNumbers,
         geoRefFIDArray=geoRefFIDArray,
         bandedOutFile=bandedOutFile,
         bandedFID=bandedFID,
-        savePath=savePath).split("\n")
+        savePath=savePath,
+        MATH_DOIT_Parameters=MATH_DOIT_Parameters,
+        EXPORT_Parameters=EXPORT_Parameters).split("\n")
     
     return((allInstructions, bandedFID))
 
 
-# Takes a list of strings, an int, two optional strings, and an optional function.
-# The list of strings corresponds to the FID variable names.
-# The int is the counter, to give each of the final variables in IDL unique names.
-# The first optional string is the relative filesystem path to the tasks.3 file, which provides the base instructions for IDL.
-# The second optional string is a path of the temporary directory where we want to store intermediate files.
-# The optional function will be called on all the IDL commands.
-def runTaskThree(taskTwoFIDs, count, taskThreeFilename="tasks.3", execute=print, saveDir="Z:\\temp"):
-    idlCommands, mosaicRaster = getTaskThreeInstructions(taskTwoFIDs, count, taskThreeFilename=taskThreeFilename,  saveDir=saveDir)
+def runTaskThree(taskTwoFIDs, config, taskThreeFilename="mosaic.task", execute=print, saveDir="temp"):
+    idlCommands = getTaskThreeInstructions(taskTwoFIDs, config, taskThreeFilename=taskThreeFilename,  saveDir=saveDir)
     for command in idlCommands:
         execute(command)
-    return(mosaicRaster)
+
+    # End of line argument for the .pro file, allows the program to be compiled and run easily.
+    execute("END")
 
 
-# Takes a list of strings, a string, an int, and an optional string.
-# The list of strings contains the FID variable names for all of the band-math files.
-# The int is the counter, to give each of the final variables in IDL unique names.
-# The first optional string is the relative filesystem path to the tasks.3 file, which provides the base instructions for IDL.
-# The second optional string is a path of the temporary directory where we want to store intermediate files.
-# Returns a tuple, containing...
-# A list of strings, corresponding to the relevant IDL instructions.
-# A string, corresponding to the mosaic raster variable name.
-def getTaskThreeInstructions(FIDs, count, taskThreeFilename="tasks.3", saveDir="Z:\\temp"):
+# Returns a list of strings, corresponding to the relevant IDL instructions.
+def getTaskThreeInstructions(FIDs, config, taskThreeFilename="mosaic.task", saveDir="temp"):
     inputRasters = ", ".join(["ENVIFIDToRaster({0})".format(fid) for fid in FIDs])
     colorMatchingActionsList = ["'Adjust'" for _ in FIDs]
     colorMatchingActionsList[-1] = "'Reference'"
     colorMatchingActions = ", ".join(colorMatchingActionsList)
-    featheringDistance = ", ".join(["0" for _ in FIDs])
-    mosaicRaster = "mosaicRaster_{0}".format(count)
-    savePath = "'{0}'".format(os.path.join(saveDir, "dataMosaicFile_{0}_{1}".format(count, datetime.now().strftime("%Y-%m-%d %H_%M_%S"))))
+    mosaicSavePath = "'{0}'".format(os.path.join(saveDir, "dataMosaicFile_{0}".format(datetimeString())))
+    coloredMosaicSavePath = "'{0}'".format(os.path.join(saveDir, "coloredMosaicFile_{0}".format(datetimeString())))
+    
+    BuildMosaicRaster_Parameters = getConfigParameters(config, "BuildMosaicRaster", taskName="MosaicTask", arrayLen=len(FIDs))
+    RecolorTask_Parameters = getConfigParameters(config, "ColorSliceClassification", taskName="RecolorTask", arrayLen=len(FIDs))
+    EXPORT_Parameters = getConfigParameters(config, "EXPORT")
 
     allInstructions = getTaskFileLines(taskThreeFilename).format(inputRasters=inputRasters,
         colorMatchingActions=colorMatchingActions,
-        featheringDistance=featheringDistance,
-        mosaicRaster=mosaicRaster,
-        savePath=savePath).split("\n")
-    
-    return((allInstructions, mosaicRaster))
+        mosaicSavePath=mosaicSavePath,
+        coloredMosaicSavePath=coloredMosaicSavePath,
+        BuildMosaicRaster_Parameters=BuildMosaicRaster_Parameters,
+        RecolorTask_Parameters=RecolorTask_Parameters,
+        EXPORT_Parameters=EXPORT_Parameters).split("\n")
 
-
-# Takes a list of strings, an int, two optional strings, and an optional function.
-# The list of strings corresponds to the FID variable names.
-# The first optional string is the relative filesystem path to the tasks.4 file, which provides the base instructions for IDL.
-# The second optional string is a path of the temporary directory where we want to store intermediate files.
-# The optional function will be called on all the IDL commands.
-def runTaskFour(inputRaster, count, taskFourFilename="tasks.4", execute=print, saveDir="Z:\\temp"):
-    idlCommands = getTaskFourInstructions(inputRaster, count, taskFourFilename=taskFourFilename,  saveDir=saveDir)
-    for command in idlCommands:
-        execute(command)
-
-
-# Takes two strings.
-# The first string is the name of the mosaicRaster variable.
-# The first optional string is the relative filesystem path to the tasks.4 file, which provides the base instructions for IDL.
-# The second optional string is a path of the temporary directory where we want to store intermediate files.
-# Returns a list of strings, corresponding to the relevant IDL instructions.
-def getTaskFourInstructions(inputRaster, count, taskFourFilename="tasks.4", saveDir="Z:\\temp"):
-    savePath = "'{0}'".format(os.path.join(saveDir, "coloredMosaicFile_{0}_{1}".format(count, datetime.now().strftime("%Y-%m-%d %H_%M_%S"))))
-
-    allInstructions = getTaskFileLines(taskFourFilename).format(inputRaster=inputRaster,
-        savePath=savePath).split("\n")
     return(allInstructions)

@@ -1,0 +1,29 @@
+# Complete!
+
+MosaicTask = ENVITask('BuildMosaicRaster')
+MosaicTask.INPUT_RASTERS = [{inputRasters}]
+
+{BuildMosaicRaster_Parameters}
+
+MosaicTask.Execute
+
+mosaicRaster = MosaicTask.OUTPUT_RASTER
+
+View = E.GetView()
+Layer = View.CreateLayer(mosaicRaster)
+
+mosaicRaster.Export, {mosaicSavePath}, {EXPORT_Parameters}
+
+RecolorTask = ENVITask('ColorSliceClassification')
+RecolorTask.INPUT_RASTER = mosaicRaster
+
+{RecolorTask_Parameters}
+
+RecolorTask.Execute
+
+recolorRaster = RecolorTask.OUTPUT_RASTER
+
+View = E.GetView()
+Layer = View.CreateLayer(recolorRaster)
+
+recolorRaster.Export, {coloredMosaicSavePath}, {EXPORT_Parameters}
