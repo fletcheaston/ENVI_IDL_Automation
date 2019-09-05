@@ -1,3 +1,4 @@
+# Created by Fletcher Easton
 from tkinter import *
 import tkfilebrowser
 import tkinter.filedialog
@@ -67,6 +68,7 @@ def selectFlightData():
     font = ("Helvetica", 16)
     global root
     root = Tk()
+    root.title("Select Flight Data Directories")
 
     # Adds all of the buttons to the window.
     cancelButton = Button(root, text="Cancel", font=font, command=killAll)

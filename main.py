@@ -1,7 +1,6 @@
 # Created by Fletcher Easton
 import tasks
 import tkinter
-import tkfilebrowser
 import sys
 import logging
 from configparser import SafeConfigParser

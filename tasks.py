@@ -3,6 +3,7 @@ import os
 import sys
 import logging
 from datetime import datetime
+import settings
 
 def setup():
     logging.basicConfig(filename=r"automatedENVI.log", filemode="a+", format="%(name)s - %(levelname)s - %(message)s", level=logging.DEBUG)
@@ -79,12 +80,14 @@ def getTaskFileLines(taskFilename):
 
 
 # Returns the stringified option for functions if the option is considered valid.
-def functionOption(config, section, option):
-    if(option == "type"):
-        return(None)
+def functionOption(config, section, option, arrayLen=None):
+    if((section, option.upper()) in settings.excludeParameter):
+        return("{0}".format(config.get(section, option)))
 
-    if(config.get(section, option).startswith("!")):
-        return("{0}".format(config.get(section, option).strip("!")))
+    if((section, option.upper()) in settings.multipleValues):
+        return("{0}={1}".format(option.upper(), [int(config.get(section, option)) for _ in range(arrayLen)]))
+        return("{0}={1}".format(option.upper(), [config.get(section, option) for _ in range(arrayLen)]))
+
     try:
         if(config.getfloat(section, option).is_integer()):
             return("{0}={1}".format(option.upper(), config.getint(section, option)))
@@ -100,17 +103,14 @@ def functionOption(config, section, option):
 
 # Returns the stringified option for tasks if the option is considered valid.
 def taskOption(taskName, config, section, option, arrayLen=None):
-    if(option == "type"):
-        return(None)
-    
-    if(config.get(section, option).startswith("!")):
-        return("{0}".format(config.get(section, option).strip("!")))
+    if((section, option.upper()) in settings.excludeParameter):
+        return("{0}".format(config.get(section, option)))
 
-    if(config.get(section, option).startswith("#")):
+    if((section, option.upper()) in settings.multipleValues):
         try:
-            return("{0}.{1}={2}".format(taskName, option.upper(), [int(config.get(section, option).strip("#")) for _ in range(arrayLen)]))
+            return("{0}.{1}={2}".format(taskName, option.upper(), [int(config.get(section, option)) for _ in range(arrayLen)]))
         except:
-            return("{0}.{1}={2}".format(taskName, option.upper(), [config.get(section, option).strip("#") for _ in range(arrayLen)]))
+            return("{0}.{1}={2}".format(taskName, option.upper(), [config.get(section, option) for _ in range(arrayLen)]))
 
     try:
         if(config.getfloat(section, option).is_integer()):
@@ -129,13 +129,12 @@ def taskOption(taskName, config, section, option, arrayLen=None):
 # Returns a string formatted for the parameters of that section.
 def getConfigParameters(config, section, taskName=None, arrayLen=None):
     parameters = ""
-    allValidOptions = []
-    
-    if(config.get(section, "type") == "function"):
-        allValidOptions = [functionOption(config, section, option) for option in config.options(section) if(functionOption(config, section, option))]
-        parameters = ", ".join(allValidOptions)    
 
-    elif(config.get(section, "type") == "task"):
+    if(settings.typeChecker[section] == "function"):
+        allValidOptions = [functionOption(config, section, option) for option in config.options(section) if(functionOption(config, section, option))]
+        parameters = ", ".join(allValidOptions)
+
+    elif(settings.typeChecker[section] == "task"):
         allValidOptions = [taskOption(taskName, config, section, option, arrayLen=arrayLen) for option in config.options(section) if(taskOption(taskName, config, section, option, arrayLen=arrayLen))]
         parameters = "\n".join(allValidOptions)
 
@@ -146,6 +145,10 @@ def getConfigParameters(config, section, taskName=None, arrayLen=None):
 def runTaskOne(pathNames, config, execute=print, taskOneFilename="georeference.task", saveDir="temp"):
     taskOneFIDs = []
     count = 0
+    
+    # Start of the .pro file, activates ENVI through IDL.
+    execute("E = ENVI()")
+
     for hsi, igm in pathNames:
         idlCommands, uniqueFID = getTaskOneInstructions(hsi, igm, config, count, taskOneFilename=taskOneFilename, saveDir=saveDir)
         taskOneFIDs.append(uniqueFID)

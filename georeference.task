@@ -1,4 +1,4 @@
-# Complete!
+# Created by Fletcher Easton
 
 dataRaster = E.OpenRaster({hsiFile})
 locationRaster = E.OpenRaster({igmFile})
