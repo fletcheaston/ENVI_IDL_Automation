@@ -1,6 +1,12 @@
 # Created by Fletcher Easton
 
 def init():
+    global font
+    font = ("Helvetica", 16)
+    
+    global allFlightDataRows
+    allFlightDataRows = []
+
     global allFlightDirs
     allFlightDirs = set()
     
@@ -14,6 +20,12 @@ def init():
         "ColorSliceClassification": "task"
     }
     
+    # To-do?
+    global excludeValue
+    excludeValue = [
+        
+    ]
+
     global excludeParameter
     excludeParameter = [
         ("EXPORT", "FORMAT")

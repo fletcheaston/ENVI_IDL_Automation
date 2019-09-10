@@ -1,4 +1,6 @@
 # Created by Fletcher Easton
+
+import os
 import tasks
 import tkinter
 import sys
@@ -41,4 +43,7 @@ if __name__ == '__main__':
     pathNames = tasks.getFilePairsFromDirs(settings.allFlightDirs)
     taskOneFIDs = tasks.runTaskOne(pathNames, config, execute=writeToFile, saveDir=saveDir)
     taskTwoFIDs = tasks.runTaskTwo(taskOneFIDs, config, execute=writeToFile, saveDir=saveDir)
-    tasks.runTaskThree(taskTwoFIDs, config, execute=writeToFile, saveDir=saveDir)
+    savedRasterPath = tasks.runTaskThree(taskTwoFIDs, config, execute=writeToFile, saveDir=saveDir)
+    
+    os.system("python3 legend.py {0} &".format(savedRasterPath))
+

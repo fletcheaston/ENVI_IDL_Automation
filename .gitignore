@@ -17,3 +17,7 @@
 ._*
 .Spotlight-V100
 .Trashes
+
+# Gimp Files #
+######################
+*.xcf

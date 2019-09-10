@@ -18,7 +18,7 @@ def datetimeString():
 # The path to a .hsi file is the first element in each tuple.
 # The path to an _igm file is the second element in each tuple.
 def getFilePairsFromDirs(dirs):
-    allPathPairs = []
+    allPathPairs = set()
     filePairErrors = 0
 
     for directory in dirs:
@@ -50,7 +50,7 @@ def getFilePairsFromDirs(dirs):
                     # Throw the absolute paths into a tuple and append it to the list.
                     logging.info("{0},{1}: File pair found in {2}.".format(hsiFiles[0], igmFiles[0], os.path.abspath(dirpath)))
                     pathPair = (os.path.join(os.path.abspath(dirpath), hsiFiles[0]), os.path.join(os.path.abspath(dirpath), igmFiles[0]))
-                    allPathPairs.append(pathPair)
+                    allPathPairs.add(pathPair)
 
     if(filePairErrors > 0):
         # Notably, this can now detect extra .hsi or _igm files across multiple directories, and will alert the operator to all of them.
@@ -250,15 +250,19 @@ def getTaskTwoInstructions(FID, config, fidCount, taskTwoFilename="bandmath.task
 
 
 def runTaskThree(taskTwoFIDs, config, taskThreeFilename="mosaic.task", execute=print, saveDir="temp"):
-    idlCommands = getTaskThreeInstructions(taskTwoFIDs, config, taskThreeFilename=taskThreeFilename,  saveDir=saveDir)
+    idlCommands, savedRasterPath = getTaskThreeInstructions(taskTwoFIDs, config, taskThreeFilename=taskThreeFilename,  saveDir=saveDir)
     for command in idlCommands:
         execute(command)
 
     # End of line argument for the .pro file, allows the program to be compiled and run easily.
     execute("END")
+    
+    return(savedRasterPath)
 
 
-# Returns a list of strings, corresponding to the relevant IDL instructions.
+# Returns a tuple, containing...
+# A list of strings, corresponding to the relevant IDL instructions.
+# A string, corresponding to the path of the final file.
 def getTaskThreeInstructions(FIDs, config, taskThreeFilename="mosaic.task", saveDir="temp"):
     inputRasters = ", ".join(["ENVIFIDToRaster({0})".format(fid) for fid in FIDs])
     colorMatchingActionsList = ["'Adjust'" for _ in FIDs]
@@ -279,4 +283,4 @@ def getTaskThreeInstructions(FIDs, config, taskThreeFilename="mosaic.task", save
         RecolorTask_Parameters=RecolorTask_Parameters,
         EXPORT_Parameters=EXPORT_Parameters).split("\n")
 
-    return(allInstructions)
+    return((allInstructions, mosaicSavePath.strip("'")))
