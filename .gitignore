@@ -1,6 +1,7 @@
-# Logs and databases #
+# Logs and temp files #
 ######################
 *.log
+*.txt
 
 # IDL Command Files #
 ######################

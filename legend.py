@@ -7,6 +7,12 @@ import sys
 import time
 
 
+def writeToFile(string, filename=r"coloredMosaicPaths.txt"):
+    with open(filename, "a+") as file:
+        file.write(string.strip())
+        file.write("\n")
+
+
 def readImage(path):
     if(os.path.isfile(path)):
         try:
@@ -42,16 +48,19 @@ def placeLegend(legendImg, mapImg, legendToMapScale=0.5, side="LEFT"):
     
     return(mapWithLegendImg)
 
+
 if __name__ == '__main__':
-    # Waits until the mosaic is created.
-    while(True):
-        map = readImage(sys.argv[1])
-        if(map is not None):
-            break
-        time.sleep(1)
     legend = readImage("Legend.png")
     
-    mapWithLegend = placeLegend(legend, map)
-    savePath = "{0}_withLegend.png".format(sys.argv[1])
-    saveImage(mapWithLegend, savePath)
+    with open("coloredMosaicPaths.txt") as f:
+        allFilePaths = f.readlines()
     
+    for path in allFilePaths:
+        map = readImage(path.strip())
+
+        if(map is not None):
+            mapWithLegend = placeLegend(legend, map)
+            savePath = "{0}_withLegend.png".format(path)
+            saveImage(mapWithLegend, savePath)
+        elif:
+            writeToFile(path, "coloredMosaicPaths.txt")

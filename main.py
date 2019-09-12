@@ -45,5 +45,4 @@ if __name__ == '__main__':
     taskTwoFIDs = tasks.runTaskTwo(taskOneFIDs, config, execute=writeToFile, saveDir=saveDir)
     savedRasterPath = tasks.runTaskThree(taskTwoFIDs, config, execute=writeToFile, saveDir=saveDir)
     
-    os.system("python3 legend.py {0} &".format(savedRasterPath))
-
+    writeToFile(savedRasterPath, "coloredMosaicPaths.txt")
