@@ -6,6 +6,11 @@ import time
 from PIL import Image
 
 
+def clearFile(filename=r"coloredMosaicPaths.txt"):
+    with open(filename, "w+") as file:
+        pass
+
+
 def writeToFile(string, filename=r"coloredMosaicPaths.txt"):
     with open(filename, "a+") as file:
         file.write(string.strip())
@@ -58,6 +63,8 @@ if __name__ == '__main__':
     
     with open("coloredMosaicPaths.txt") as f:
         allFilePaths = f.readlines()
+	
+	clearFile("coloredMosaicPaths.txt")
     
     for path in allFilePaths:
         path = path.strip()
@@ -65,7 +72,7 @@ if __name__ == '__main__':
 
         if(map is not None):
             mapWithLegend = placeLegend(legend, map)
-            savePath = "test.png".format(path)
+            savePath = "{0}_withLegend.png".format(path)
             saveImage(mapWithLegend, savePath)
         else:
             writeToFile(path, "coloredMosaicPaths.txt")
