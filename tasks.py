@@ -283,4 +283,4 @@ def getTaskThreeInstructions(FIDs, config, taskThreeFilename="mosaic.task", save
         RecolorTask_Parameters=RecolorTask_Parameters,
         EXPORT_Parameters=EXPORT_Parameters).split("\n")
 
-    return((allInstructions, mosaicSavePath.strip("'")))
+    return((allInstructions, coloredMosaicSavePath.strip("'")))

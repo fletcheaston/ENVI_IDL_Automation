@@ -28,7 +28,7 @@ def saveImage(img, path):
     img.save(path)
 
 
-def placeLegend(legendImg, mapImg, legendToMapScale=1, side="RIGHT"):
+def placeLegend(legendImg, mapImg, legendToMapScale=0.25, side="LEFT"):
     mapWidth, mapHeight = mapImg.size
     legendWidth, legendHeight = legendImg.size
     
@@ -60,11 +60,12 @@ if __name__ == '__main__':
         allFilePaths = f.readlines()
     
     for path in allFilePaths:
-        map = readImage(path.strip())
+        path = path.strip()
+        map = readImage(path)
 
         if(map is not None):
             mapWithLegend = placeLegend(legend, map)
-            savePath = "{0}_withLegend.png".format(path)
+            savePath = "test.png".format(path)
             saveImage(mapWithLegend, savePath)
         else:
             writeToFile(path, "coloredMosaicPaths.txt")
