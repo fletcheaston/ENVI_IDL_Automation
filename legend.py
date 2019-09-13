@@ -1,10 +1,9 @@
 # Created by Fletcher Easton
 
-import cv2
 import os.path
-import numpy as np
 import sys
 import time
+from PIL import Image
 
 
 def writeToFile(string, filename=r"coloredMosaicPaths.txt"):
@@ -16,7 +15,9 @@ def writeToFile(string, filename=r"coloredMosaicPaths.txt"):
 def readImage(path):
     if(os.path.isfile(path)):
         try:
-            return(cv2.imread(path))
+            raster = Image.open(path)
+            img = raster.convert("RGB")
+            return(img)
         except:
             pass
 
@@ -24,28 +25,31 @@ def readImage(path):
 
 
 def saveImage(img, path):
-    cv2.imwrite(path, img)
+    img.save(path)
 
 
-def placeLegend(legendImg, mapImg, legendToMapScale=0.5, side="LEFT"):
-    mapHeight, mapWidth, mapChannels = mapImg.shape
-    legendHeight, legendWidth, legendChannels = legendImg.shape
+def placeLegend(legendImg, mapImg, legendToMapScale=1, side="RIGHT"):
+    mapWidth, mapHeight = mapImg.size
+    legendWidth, legendHeight = legendImg.size
     
     scalingFactor = mapHeight / legendHeight * legendToMapScale
     scaledHeight = int(legendHeight * scalingFactor)
     scaledWidth  = int(legendWidth * scalingFactor)
     
-    resizedLegendImg = cv2.resize(legendImg, (scaledWidth, scaledHeight))
-    
-    mapWithLegendImg = np.zeros((max(mapHeight, scaledHeight), mapWidth + scaledWidth, 3), np.uint8)
-    
-    if(side.upper() == "LEFT"):
-        mapWithLegendImg[0:scaledHeight, 0:scaledWidth] = resizedLegendImg
-        mapWithLegendImg[0:mapHeight, scaledWidth:mapWidth + scaledWidth] = mapImg
-    elif(side.upper() == "RIGHT"):
-        mapWithLegendImg[0:scaledHeight, mapWidth:mapWidth + scaledWidth] = resizedLegendImg
-        mapWithLegendImg[0:mapHeight, 0:mapWidth] = mapImg
-    
+    mapWithLegendImg = Image.new('RGB', (mapWidth + scaledWidth, max(mapHeight, scaledHeight)), (0, 0, 0))
+
+    legendImg = legendImg.resize((scaledWidth, scaledHeight))
+
+    if(side == "LEFT"):
+        legendOffset = (0, 0)
+        mapOffset = (scaledWidth, 0)
+    elif(side == "RIGHT"):
+        legendOffset = (mapWidth, 0)
+        mapOffset = (0, 0)
+
+    mapWithLegendImg.paste(legendImg, legendOffset)
+    mapWithLegendImg.paste(mapImg, mapOffset)
+
     return(mapWithLegendImg)
 
 
@@ -62,5 +66,5 @@ if __name__ == '__main__':
             mapWithLegend = placeLegend(legend, map)
             savePath = "{0}_withLegend.png".format(path)
             saveImage(mapWithLegend, savePath)
-        elif:
+        else:
             writeToFile(path, "coloredMosaicPaths.txt")

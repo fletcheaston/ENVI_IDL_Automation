@@ -255,7 +255,7 @@ def runTaskThree(taskTwoFIDs, config, taskThreeFilename="mosaic.task", execute=p
         execute(command)
 
     # End of line argument for the .pro file, allows the program to be compiled and run easily.
-    execute("END")
+    execute("EXIT")
     
     return(savedRasterPath)
 
