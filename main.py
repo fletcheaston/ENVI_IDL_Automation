@@ -36,6 +36,7 @@ if __name__ == '__main__':
     if(len(settings.allFlightDirs) == 0 or settings.allFlightDirs[0] == ""):
         root = tkinter.Tk()
         root.withdraw()
+        writeToFile("exit")
         tkinter.messagebox.showerror("Error", "No flight data selected. Exiting program.")
         sys.exit(1)
 

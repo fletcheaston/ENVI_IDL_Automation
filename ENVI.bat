@@ -1,3 +1,3 @@
-call activate ENVI && python C:\Users\feaston\Desktop\ENVI\main.py
-call idl C:\Users\feaston\Desktop\ENVI\idlCommands.pro
-call activate ENVI && python C:\Users\feaston\Desktop\ENVI\legend.py
+call activate ENVI && python %~dp0\main.py
+call idl %~dp0\idlCommands.pro
+call activate ENVI && python %~dp0\legend.py
