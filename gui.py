@@ -7,6 +7,13 @@ import settings
 import time
 
 
+def writeToFile(string, filename=r"idlCommands.pro"):
+    with open(filename, "a+") as file:
+        file.write("\n")
+        file.write(string.strip())
+        file.write("\n")
+
+
 class FlightDataRow:
     def __init__(self, root, path):
         self.root = root
@@ -56,6 +63,7 @@ def askDir(title):
     directory = tkfilebrowser.askopendirname(title=title, foldercreation=True)
     root.withdraw()
     if(directory == ""):
+        writeToFile("exit")
         tkinter.messagebox.showerror("Error", "No directory selected for saving data. Exiting program.")
         sys.exit(1)
     return(directory)
