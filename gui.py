@@ -60,8 +60,8 @@ def deleteFlightData():
 # Allows the user to select a directory.
 def askDir(title):
     root = tkinter.Tk()
-    directory = tkfilebrowser.askopendirname(title=title, foldercreation=True)
     root.withdraw()
+    directory = tkfilebrowser.askopendirname(title=title, foldercreation=True)
     if(directory == ""):
         writeToFile("exit")
         tkinter.messagebox.showerror("Error", "No directory selected for saving data. Exiting program.")
