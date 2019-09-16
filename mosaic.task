@@ -12,7 +12,7 @@ mosaicRaster = MosaicTask.OUTPUT_RASTER
 View = E.GetView()
 Layer = View.CreateLayer(mosaicRaster)
 
-mosaicRaster.Export, {mosaicSavePath}, {EXPORT_Parameters}
+#mosaicRaster.Export, {mosaicSavePath}, {EXPORT_Parameters}
 
 RecolorTask = ENVITask('ColorSliceClassification')
 RecolorTask.INPUT_RASTER = mosaicRaster

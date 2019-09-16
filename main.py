@@ -18,12 +18,13 @@ def clearFile(filename=r"idlCommands.pro"):
 
 def writeToFile(string, filename=r"idlCommands.pro"):
     with open(filename, "a+") as file:
+        file.write("\n")
         file.write(string.strip())
         file.write("\n")
- 
+
 
 if __name__ == '__main__':
-    settings.init() 
+    settings.init()
     tasks.setup()
     clearFile()
 
@@ -44,5 +45,5 @@ if __name__ == '__main__':
     taskOneFIDs = tasks.runTaskOne(pathNames, config, execute=writeToFile, saveDir=saveDir)
     taskTwoFIDs = tasks.runTaskTwo(taskOneFIDs, config, execute=writeToFile, saveDir=saveDir)
     savedRasterPath = tasks.runTaskThree(taskTwoFIDs, config, execute=writeToFile, saveDir=saveDir)
-    
-    writeToFile(savedRasterPath, "coloredMosaicPaths.txt")
+
+    writeToFile(saveDir, "coloredMosaicPaths.txt")

@@ -1,5 +1,7 @@
 # Created by Fletcher Easton
 
+import cv2
+import numpy
 import os.path
 import sys
 import time
@@ -30,49 +32,68 @@ def readImage(path):
 
 
 def saveImage(img, path):
-    img.save(path)
+    cv2.imwrite(path, img)
 
 
 def placeLegend(legendImg, mapImg, legendToMapScale=0.25, side="LEFT"):
-    mapWidth, mapHeight = mapImg.size
-    legendWidth, legendHeight = legendImg.size
-    
-    scalingFactor = mapHeight / legendHeight * legendToMapScale
-    scaledHeight = int(legendHeight * scalingFactor)
-    scaledWidth  = int(legendWidth * scalingFactor)
-    
-    mapWithLegendImg = Image.new('RGB', (mapWidth + scaledWidth, max(mapHeight, scaledHeight)), (0, 0, 0))
+    numpyMap = numpy.array(mapImg)
+    numpyLegend = numpy.array(legendImg)
 
-    legendImg = legendImg.resize((scaledWidth, scaledHeight))
+    legendHeight, legendWidth, _ = numpyLegend.shape
+    mapHeight, mapWidth, _ = numpyMap.shape
 
-    if(side == "LEFT"):
-        legendOffset = (0, 0)
-        mapOffset = (scaledWidth, 0)
-    elif(side == "RIGHT"):
-        legendOffset = (mapWidth, 0)
-        mapOffset = (0, 0)
+    largestSize = int(mapHeight * 0.05)
+    increment = int(mapHeight * 0.01)
+    finalSize = 0.9
 
-    mapWithLegendImg.paste(legendImg, legendOffset)
-    mapWithLegendImg.paste(mapImg, mapOffset)
+    startPixel = numpyMap[0][0]
 
-    return(mapWithLegendImg)
+    while(True):
+        ratio = largestSize / legendWidth
+        maxY = int(legendHeight * ratio)
+        maxX = int(legendWidth * ratio)
+
+        if(numpy.unique(numpyMap[:maxY,:maxX]).size > 3):
+            break
+
+        largestSize += increment
+
+    maxX = int(maxX * finalSize)
+    maxY = int(maxY * finalSize)
+
+    numpyLegend = cv2.resize(numpyLegend,(maxX, maxY))
+    numpyMap[0:maxY, 0:maxX] = numpyLegend
+
+    numpyMap = cv2.cvtColor(numpyMap, cv2.COLOR_RGB2BGR)
+    return(numpyMap)
 
 
 if __name__ == '__main__':
     legend = readImage("Legend.png")
-    
+
     with open("coloredMosaicPaths.txt") as f:
         allFilePaths = f.readlines()
-	
-	clearFile("coloredMosaicPaths.txt")
-    
-    for path in allFilePaths:
-        path = path.strip()
-        map = readImage(path)
 
-        if(map is not None):
-            mapWithLegend = placeLegend(legend, map)
-            savePath = "{0}_withLegend.png".format(path)
-            saveImage(mapWithLegend, savePath)
-        else:
-            writeToFile(path, "coloredMosaicPaths.txt")
+    allDirs = [path.strip() for path in allFilePaths]
+    clearFile("coloredMosaicPaths.txt")
+
+    for directory in allDirs:
+        # Recursively walks through all the sub-directories in the specified directory.
+        for dirpath, _, allFiles in os.walk(directory):
+
+            mosaicFiles = [file for file in allFiles if file.startswith("coloredMosaicFile")]
+
+            if(len(mosaicFiles) > 0):
+                for fileName in mosaicFiles:
+                    fullPath = os.path.join(os.path.abspath(dirpath), fileName)
+                    map = readImage(fullPath)
+
+                    if(map is not None):
+                        mapWithLegend = placeLegend(legend, map)
+                        savePath = os.path.join(os.path.abspath(dirpath), "finalMap.png")
+                        saveImage(mapWithLegend, savePath)
+                    else:
+                        writeToFile(directory, "coloredMosaicPaths.txt")
+
+            else:
+                writeToFile(directory, "coloredMosaicPaths.txt")
