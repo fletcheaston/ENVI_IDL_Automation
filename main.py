@@ -44,7 +44,6 @@ if __name__ == '__main__':
 
     pathNames = tasks.getFilePairsFromDirs(settings.allFlightDirs)
     taskOneFIDs = tasks.runTaskOne(pathNames, config, execute=writeToFile, saveDir=saveDir)
-    taskTwoFIDs = tasks.runTaskTwo(taskOneFIDs, config, execute=writeToFile, saveDir=saveDir)
-    savedRasterPath = tasks.runTaskThree(taskTwoFIDs, config, execute=writeToFile, saveDir=saveDir)
+    savedRasterPath = tasks.runTaskTwo(taskOneFIDs, config, execute=writeToFile, saveDir=saveDir)
 
     writeToFile(saveDir, "coloredMosaicPaths.txt")

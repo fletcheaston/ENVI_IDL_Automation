@@ -24,17 +24,17 @@ def getFilePairsFromDirs(dirs):
     for directory in dirs:
         # Recursively walks through all the sub-directories in the specified directory.
         for dirpath, _, allFiles in os.walk(directory):
-    
+
             # Each .hsi file requires a corresponding _igm file.
             # These files don't have the same name, so we instead search for what the files end with.
             # We're checking for at least one of each type in the current directory.
             if(any(file.endswith(".hsi") for file in allFiles) and any(file.endswith("_igm") for file in allFiles)):
-    
+
                 # We're now obtaining all of the .hsi and _igm files in the current directory.
                 # There may be more than one of each, which is a problem.
                 hsiFiles = [file for file in allFiles if file.endswith(".hsi")]
                 igmFiles = [file for file in allFiles if file.endswith("_igm")]
-    
+
                 # Which is why we check to make sure exactly one of each is in the current directory.
                 # There can't be zero of either, as we wouldn't have gotten to this line in the program.
                 # However, there may be more than one of each. We print an error message and (eventually) end the program if this occurs.
@@ -59,7 +59,7 @@ def getFilePairsFromDirs(dirs):
     if(len(allPathPairs) == 0):
         logging.error("No .hsi/_igm pair files found. Exiting program.")
         sys.exit(1)
-    
+
     # Why end the program? In case there was a mistake when moving files around, we don't want to run the full program only to find out we're missing data later.
     # Better to end the program here and let the operator know what the issue is.
     # But assuming we have no problems finding the file pairs, we return the list of tuples containing the relevent absoulte paths.
@@ -75,7 +75,7 @@ def getTaskFileLines(taskFilename):
     for line in taskFileLines:
         if(not line.startswith("#") and line):
             allLines += line
-    
+
     return(allLines)
 
 
@@ -142,10 +142,10 @@ def getConfigParameters(config, section, taskName=None, arrayLen=None):
 
 
 # Returns a list of strings, corresponding to FID variable names.
-def runTaskOne(pathNames, config, execute=print, taskOneFilename="georeference.task", saveDir="temp"):
+def runTaskOne(pathNames, config, execute=print, taskOneFilename="bandmathAndGeoreference.task", saveDir="temp"):
     taskOneFIDs = []
     count = 0
-    
+
     # Start of the .pro file, activates ENVI through IDL.
     execute("E = ENVI()")
 
@@ -162,26 +162,30 @@ def runTaskOne(pathNames, config, execute=print, taskOneFilename="georeference.t
 # Returns a tuple, containing...
 # A list of strings, corresponding to the relevant IDL instructions.
 # A string, corresponding to the refGltFID_count.
-def getTaskOneInstructions(hsiFilename, igmFilename, config, count, taskOneFilename="georeference.task", saveDir="temp"):
+def getTaskOneInstructions(hsiFilename, igmFilename, config, count, taskOneFilename="bandmathAndGeoreference.task", saveDir="temp"):
     hsiFile = "'{0}'".format(hsiFilename)
+    geoRefFIDArrayList = ["dataFID" for _ in range(len(parseBandsFromExpression(config.get("MATH_DOIT", "EXP"))))]
+    geoRefFIDArray = ", ".join(geoRefFIDArrayList)
+    bandedOutFile = "'{0}'".format(os.path.join(saveDir, "bandedMathFile_{0}".format(count)))
+    bandMathNumbers = ", ".join(parseBandsFromExpression(config.get("MATH_DOIT", "EXP")))
+    MATH_DOIT_Parameters = getConfigParameters(config, "MATH_DOIT")
     igmFile = "'{0}'".format(igmFilename)
+    ENVI_GLT_DOIT_Parameters = getConfigParameters(config, "ENVI_GLT_DOIT")
     refGltFile = "'{0}'".format(os.path.join(saveDir, "refGltFile_{0}".format(count)))
     refGltFID = "refGltFID_{0}".format(count)
-    savePath = "'{0}'".format(os.path.join(saveDir, "georeferencedFile_{0}_{1}".format(count, datetimeString())))
-
-    ENVI_GLT_DOIT_Parameters = getConfigParameters(config, "ENVI_GLT_DOIT")
     ENVI_GEOREF_FROM_GLT_DOIT_Parameters = getConfigParameters(config, "ENVI_GEOREF_FROM_GLT_DOIT")
-    EXPORT_Parameters = getConfigParameters(config, "EXPORT")
 
     allInstructions = getTaskFileLines(taskOneFilename).format(hsiFile=hsiFile,
+        geoRefFIDArray=geoRefFIDArray,
+        bandedOutFile=bandedOutFile,
+        bandMathNumbers=bandMathNumbers,
+        MATH_DOIT_Parameters=MATH_DOIT_Parameters,
         igmFile=igmFile,
+        ENVI_GLT_DOIT_Parameters=ENVI_GLT_DOIT_Parameters,
         refGltFile=refGltFile,
         refGltFID=refGltFID,
-        savePath=savePath,
-        ENVI_GLT_DOIT_Parameters=ENVI_GLT_DOIT_Parameters,
-        ENVI_GEOREF_FROM_GLT_DOIT_Parameters=ENVI_GEOREF_FROM_GLT_DOIT_Parameters,
-        EXPORT_Parameters=EXPORT_Parameters).split("\n")
-    
+        ENVI_GEOREF_FROM_GLT_DOIT_Parameters=ENVI_GEOREF_FROM_GLT_DOIT_Parameters).split("\n")
+
     return((allInstructions, refGltFID))
 
 
@@ -209,73 +213,33 @@ def parseBandsFromExpression(string):
     return([str(x) for x in bands])
 
 
-# Returns a list of strings, corresponding to FID variable names.
-def runTaskTwo(taskOneFIDs, config, taskTwoFilename="bandmath.task", execute=print, saveDir="temp"):
-    taskTwoFIDs = []
-    fidCount = 0
-    for fid in taskOneFIDs:
-        idlCommands, uniqueFID = getTaskTwoInstructions(fid, config, fidCount, taskTwoFilename=taskTwoFilename, saveDir=saveDir)
-        taskTwoFIDs.append(uniqueFID)
-        for command in idlCommands:
-            execute(command)
-        fidCount += 1
-    return(taskTwoFIDs)
-
-
-# Returns a tuple, containing...
-# A list of strings, corresponding to the relevant IDL instructions.
-# A string, corresponding to the refGltFID_count.
-def getTaskTwoInstructions(FID, config, fidCount, taskTwoFilename="bandmath.task", saveDir="temp"):
-    geoRefFID = FID        
-    bandMathNumbers = ", ".join(parseBandsFromExpression(config.get("MATH_DOIT", "EXP")))
-    geoRefFIDArrayList = [FID for _ in range(len(parseBandsFromExpression(config.get("MATH_DOIT", "EXP"))))]
-    geoRefFIDArray = ", ".join(geoRefFIDArrayList)
-    bandedOutFile = "'{0}'".format(os.path.join(saveDir, "bandedMathFile_{0}".format(fidCount)))
-    bandedFID = "bandedFID_{0}".format(fidCount)
-    savePath = "'{0}'".format(os.path.join(saveDir, "bandedMathFile_{0}_{1}".format(fidCount, datetimeString())))
-
-    MATH_DOIT_Parameters = getConfigParameters(config, "MATH_DOIT")
-    EXPORT_Parameters = getConfigParameters(config, "EXPORT")
-
-    allInstructions = getTaskFileLines(taskTwoFilename).format(geoRefFID=geoRefFID,
-        bandMathNumbers=bandMathNumbers,
-        geoRefFIDArray=geoRefFIDArray,
-        bandedOutFile=bandedOutFile,
-        bandedFID=bandedFID,
-        savePath=savePath,
-        MATH_DOIT_Parameters=MATH_DOIT_Parameters,
-        EXPORT_Parameters=EXPORT_Parameters).split("\n")
-    
-    return((allInstructions, bandedFID))
-
-
-def runTaskThree(taskTwoFIDs, config, taskThreeFilename="mosaic.task", execute=print, saveDir="temp"):
-    idlCommands, savedRasterPath = getTaskThreeInstructions(taskTwoFIDs, config, taskThreeFilename=taskThreeFilename,  saveDir=saveDir)
+def runTaskTwo(FIDs, config, taskFilename="mosaic.task", execute=print, saveDir="temp"):
+    idlCommands, savedRasterPath = getTaskTwoInstructions(FIDs, config, taskFilename=taskFilename,  saveDir=saveDir)
     for command in idlCommands:
         execute(command)
 
     # End of line argument for the .pro file, allows the program to be compiled and run easily.
     execute("EXIT")
-    
+
     return(savedRasterPath)
 
 
 # Returns a tuple, containing...
 # A list of strings, corresponding to the relevant IDL instructions.
 # A string, corresponding to the path of the final file.
-def getTaskThreeInstructions(FIDs, config, taskThreeFilename="mosaic.task", saveDir="temp"):
+def getTaskTwoInstructions(FIDs, config, taskFilename="mosaic.task", saveDir="temp"):
     inputRasters = ", ".join(["ENVIFIDToRaster({0})".format(fid) for fid in FIDs])
     colorMatchingActionsList = ["'Adjust'" for _ in FIDs]
     colorMatchingActionsList[-1] = "'Reference'"
     colorMatchingActions = ", ".join(colorMatchingActionsList)
     mosaicSavePath = "'{0}'".format(os.path.join(saveDir, "dataMosaicFile_{0}".format(datetimeString())))
     coloredMosaicSavePath = "'{0}'".format(os.path.join(saveDir, "coloredMosaicFile_{0}".format(datetimeString())))
-    
+
     BuildMosaicRaster_Parameters = getConfigParameters(config, "BuildMosaicRaster", taskName="MosaicTask", arrayLen=len(FIDs))
     RecolorTask_Parameters = getConfigParameters(config, "ColorSliceClassification", taskName="RecolorTask", arrayLen=len(FIDs))
     EXPORT_Parameters = getConfigParameters(config, "EXPORT")
 
-    allInstructions = getTaskFileLines(taskThreeFilename).format(inputRasters=inputRasters,
+    allInstructions = getTaskFileLines(taskFilename).format(inputRasters=inputRasters,
         colorMatchingActions=colorMatchingActions,
         mosaicSavePath=mosaicSavePath,
         coloredMosaicSavePath=coloredMosaicSavePath,
