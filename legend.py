@@ -42,7 +42,7 @@ def placeLegend(legendImg, mapImg, legendToMapScale=0.25, side="LEFT"):
     legendHeight, legendWidth, _ = numpyLegend.shape
     mapHeight, mapWidth, _ = numpyMap.shape
 
-    largestSize = int(mapHeight * 0.05)
+    largestSize = int(mapHeight * 0.10)
     increment = int(mapHeight * 0.01)
     finalSize = 0.9
 
