@@ -74,8 +74,10 @@ if __name__ == '__main__':
     with open("coloredMosaicPaths.txt") as f:
         allFilePaths = f.readlines()
 
-    allDirs = [path.strip() for path in allFilePaths]
+    allDirs = set([path.strip() for path in allFilePaths])
     clearFile("coloredMosaicPaths.txt")
+    
+    notFoundDirs = set()
 
     for directory in allDirs:
         # Recursively walks through all the sub-directories in the specified directory.
@@ -93,7 +95,10 @@ if __name__ == '__main__':
                         savePath = os.path.join(os.path.abspath(dirpath), "finalMap.png")
                         saveImage(mapWithLegend, savePath)
                     else:
-                        writeToFile(directory, "coloredMosaicPaths.txt")
+                        notFoundDirs.add(directory)
 
             else:
-                writeToFile(directory, "coloredMosaicPaths.txt")
+                notFoundDirs.add(directory)
+    
+    for dir in notFoundDirs:
+        writeToFile(dir, "coloredMosaicPaths.txt")
