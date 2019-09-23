@@ -101,5 +101,4 @@ if __name__ == '__main__':
                 notFoundDirs.add(directory)
     
     for dir in notFoundDirs:
-        doesntFuckingWork()
         writeToFile(dir, "coloredMosaicPaths.txt")
