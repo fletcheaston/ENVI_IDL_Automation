@@ -26,7 +26,6 @@ def writeToFile(string, filename=r"idlCommands.pro"):
 if __name__ == '__main__':
     settings.init()
     tasks.setup()
-    clearFile()
 
     config = SafeConfigParser()
     config.read('config.ini')
@@ -36,11 +35,12 @@ if __name__ == '__main__':
     if(len(settings.allFlightDirs) == 0 or settings.allFlightDirs[0] == ""):
         root = tkinter.Tk()
         root.withdraw()
-        writeToFile("exit")
         tkinter.messagebox.showerror("Error", "No flight data selected. Exiting program.")
         sys.exit(1)
 
     saveDir = gui.askDir("Select Save Directory")
+
+    clearFile()
 
     pathNames = tasks.getFilePairsFromDirs(settings.allFlightDirs)
     taskOneFIDs = tasks.runTaskOne(pathNames, config, execute=writeToFile, saveDir=saveDir)
