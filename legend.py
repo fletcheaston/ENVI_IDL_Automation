@@ -6,7 +6,7 @@ import os.path
 import sys
 import time
 from PIL import Image
-
+from tkinter import messagebox
 
 def clearFile(filename=r"coloredMosaicPaths.txt"):
     with open(filename, "w+") as file:
@@ -78,6 +78,7 @@ if __name__ == '__main__':
     clearFile("coloredMosaicPaths.txt")
     
     notFoundDirs = set()
+    foundDirs = set()
 
     for directory in allDirs:
         # Recursively walks through all the sub-directories in the specified directory.
@@ -94,6 +95,7 @@ if __name__ == '__main__':
                         mapWithLegend = placeLegend(legend, map)
                         savePath = os.path.join(os.path.abspath(dirpath), "finalMap.png")
                         saveImage(mapWithLegend, savePath)
+                        foundDirs.add(savePath)
                     else:
                         notFoundDirs.add(directory)
 
@@ -102,3 +104,11 @@ if __name__ == '__main__':
     
     for dir in notFoundDirs:
         writeToFile(dir, "coloredMosaicPaths.txt")
+
+    if(len(notFoundDirs) > 0):
+        messagebox.showwarning("Files Not Found", "\n".join(notFoundDirs))
+
+    if(len(foundDirs) > 0):
+        messagebox.showinfo("Found Files", "\n".join(foundDirs))
+    else:
+        messagebox.showwarning("No Files Found", "Warning: No maps found in the specified directories.")
